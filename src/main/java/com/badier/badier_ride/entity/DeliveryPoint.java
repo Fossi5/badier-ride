@@ -1,10 +1,11 @@
 package com.badier.badier_ride.entity;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 import com.badier.badier_ride.enumeration.DeliveryStatus;
-
+@Builder
 @Data
 @Entity
 @Table(name = "delivery_points")

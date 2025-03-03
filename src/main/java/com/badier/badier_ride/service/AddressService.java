@@ -48,7 +48,7 @@ public class AddressService {
         return mapToResponse(savedAddress);
     }
     
-    public AddressResponse getAddressById(Long id) {
+    public AddressResponse getAddressResponseById(Long id) {
         Address address = addressRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
         

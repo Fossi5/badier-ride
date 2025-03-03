@@ -33,7 +33,7 @@ public class AddressController {
     
     @GetMapping("/{id}")
     public ResponseEntity<AddressResponse> getAddress(@PathVariable Long id) {
-        return ResponseEntity.ok(addressService.getAddressById(id));
+        return ResponseEntity.ok(addressService.getAddressResponseById(id));
     }
     
     @GetMapping
