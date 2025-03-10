@@ -41,7 +41,7 @@ public class AddressController {
         return ResponseEntity.ok(addressService.getAllAddresses());
     }
     
-    @PutMapping("/{id}")
+    @PutMapping("/update/{id}")
     public ResponseEntity<AddressResponse> updateAddress(
             @PathVariable Long id, 
             @RequestBody AddressRequest request) {
