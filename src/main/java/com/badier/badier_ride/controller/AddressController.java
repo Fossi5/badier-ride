@@ -20,13 +20,13 @@ import com.badier.badier_ride.service.AddressService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/addresses")
+@RequestMapping("/api/add")
 @RequiredArgsConstructor
 public class AddressController {
 
     private final AddressService addressService;
     
-    @PostMapping
+    @PostMapping("/post")
     public ResponseEntity<AddressResponse> createAddress(@RequestBody AddressRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(addressService.createAddress(request));
     }

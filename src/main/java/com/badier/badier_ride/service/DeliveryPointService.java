@@ -12,7 +12,7 @@ import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.enumeration.DeliveryStatus;
 import com.badier.badier_ride.repository.AddressRepository;
 import com.badier.badier_ride.repository.DeliveryPointRepository;
-import com.badier.badier_ride.service.AddressService;
+
 
 import lombok.RequiredArgsConstructor;
 

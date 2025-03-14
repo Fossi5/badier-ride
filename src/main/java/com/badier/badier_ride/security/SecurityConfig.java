@@ -63,12 +63,24 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/addresses/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/dispatcher/**").hasRole("DISPATCHER")
-                .requestMatchers("/api/driver/**").hasRole("DRIVER")
+                .requestMatchers("/api/add/**").permitAll()
+                .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
+                .requestMatchers("/api/dispatcher/**").hasAnyAuthority("DISPATCHER")
+                .requestMatchers("/api/driver/**").hasAnyAuthority("DRIVER")
                 .anyRequest().authenticated())
-            .sessionManagement(session -> session
+        
+       /*  http
+                .sessionManagement((session) -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider((authenticationProvider))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        http.httpBasic(withDefaults());
+        return http.build();
+    }*/
+             .sessionManagement(session -> session
+
+
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
