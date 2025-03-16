@@ -1,15 +1,15 @@
 package com.badier.badier_ride.entity;
+
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import com.badier.badier_ride.enumeration.RouteStatus;
+
 @Builder
 @Data
-@AllArgsConstructor
 @Entity
 @Table(name = "routes")
 public class Route {
@@ -21,13 +21,11 @@ public class Route {
 
     @ManyToOne
     @JoinColumn(name = "driver_id")
-    private Driver driver;
-    
-    
+    private User driver;
+
     @ManyToOne
     @JoinColumn(name = "dispatcher_id")
-    private Dispatcher dispatcher;
-
+    private User dispatcher;
 
     @ManyToMany
     @JoinTable(

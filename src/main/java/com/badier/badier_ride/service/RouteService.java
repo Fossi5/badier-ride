@@ -213,8 +213,8 @@ public class RouteService {
                         .map(deliveryPointService::mapToResponse)
                         .collect(Collectors.toList()))
                 .status(route.getStatus().toString())
-                .startTime(route.getStartTime() != null ? route.getStartTime().toString() : null)
-                .endTime(route.getEndTime() != null ? route.getEndTime().toString() : null)
+                .startTime(route.getStartTime() != null ? route.getStartTime().format(DATE_TIME_FORMATTER) : null)
+                .endTime(route.getEndTime() != null ? route.getEndTime().format(DATE_TIME_FORMATTER) : null)
                 .notes(route.getNotes())
                 .build();
     }
