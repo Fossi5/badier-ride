@@ -41,7 +41,8 @@ public class RouteService {
 
         // Récupérer le répartiteur
         User dispatcher = userRepository.findById(request.getDispatcherId())
-                .orElseThrow(() -> new RuntimeException("Répartiteur non trouvé avec ID: " + request.getDispatcherId()));
+                .orElseThrow(
+                        () -> new RuntimeException("Répartiteur non trouvé avec ID: " + request.getDispatcherId()));
 
         // Récupérer les points de livraison
         List<DeliveryPoint> deliveryPoints = new ArrayList<>();
@@ -59,8 +60,8 @@ public class RouteService {
                 .dispatcher(dispatcher)
                 .deliveryPoints(deliveryPoints)
                 .status(RouteStatus.valueOf(request.getStatus()))
-                .startTime(LocalDateTime.parse(request.getStartTime(), DATE_TIME_FORMATTER))
-                .endTime(LocalDateTime.parse(request.getEndTime(), DATE_TIME_FORMATTER))
+                .startTime(request.getStartTime()) // Utilisez directement l'objet LocalDateTime
+                .endTime(request.getEndTime())
                 .notes(request.getNotes())
                 .build();
 
@@ -119,7 +120,8 @@ public class RouteService {
         // Mise à jour du répartiteur si nécessaire
         if (request.getDispatcherId() != null && !request.getDispatcherId().equals(route.getDispatcher().getId())) {
             User dispatcher = userRepository.findById(request.getDispatcherId())
-                    .orElseThrow(() -> new RuntimeException("Répartiteur non trouvé avec ID: " + request.getDispatcherId()));
+                    .orElseThrow(
+                            () -> new RuntimeException("Répartiteur non trouvé avec ID: " + request.getDispatcherId()));
             route.setDispatcher(dispatcher);
         }
 
@@ -133,11 +135,16 @@ public class RouteService {
         }
 
         // Mise à jour des autres champs
-        if (request.getName() != null) route.setName(request.getName());
-        if (request.getStatus() != null) route.setStatus(RouteStatus.valueOf(request.getStatus()));
-        if (request.getStartTime() != null) route.setStartTime(LocalDateTime.parse(request.getStartTime(), DATE_TIME_FORMATTER));
-        if (request.getEndTime() != null) route.setEndTime(LocalDateTime.parse(request.getEndTime(), DATE_TIME_FORMATTER));
-        if (request.getNotes() != null) route.setNotes(request.getNotes());
+        if (request.getName() != null)
+            route.setName(request.getName());
+        if (request.getStatus() != null)
+            route.setStatus(RouteStatus.valueOf(request.getStatus()));
+        if (request.getStartTime() != null)
+            route.setStartTime(request.getStartTime());
+        if (request.getEndTime() != null)
+            route.setEndTime(request.getEndTime());
+        if (request.getNotes() != null)
+            route.setNotes(request.getNotes());
 
         Route updatedRoute = routeRepository.save(route);
         return mapToResponse(updatedRoute);
@@ -212,10 +219,9 @@ public class RouteService {
                 .deliveryPoints(route.getDeliveryPoints().stream()
                         .map(deliveryPointService::mapToResponse)
                         .collect(Collectors.toList()))
-                .status(route.getStatus().toString())
-                .startTime(route.getStartTime() != null ? route.getStartTime().format(DATE_TIME_FORMATTER) : null)
-                .endTime(route.getEndTime() != null ? route.getEndTime().format(DATE_TIME_FORMATTER) : null)
-                .notes(route.getNotes())
+                .status(route.getStatus())
+                .startTime(route.getStartTime())
+                .endTime(route.getEndTime())
                 .build();
     }
 

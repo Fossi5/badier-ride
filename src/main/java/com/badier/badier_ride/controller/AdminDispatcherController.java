@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/admin/dispatchers")
-@PreAuthorize("hasAuthority('ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminDispatcherController {
 
@@ -37,7 +37,8 @@ public class AdminDispatcherController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DispatcherResponse> updateDispatcher(@PathVariable Long id, @RequestBody DispatcherRequest request) {
+    public ResponseEntity<DispatcherResponse> updateDispatcher(@PathVariable Long id,
+            @RequestBody DispatcherRequest request) {
         return ResponseEntity.ok(adminDispatcherService.updateDispatcher(id, request));
     }
 

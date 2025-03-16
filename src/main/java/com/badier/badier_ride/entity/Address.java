@@ -1,9 +1,13 @@
 package com.badier.badier_ride.entity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "addresses")
 public class Address {

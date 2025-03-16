@@ -1,6 +1,7 @@
 package com.badier.badier_ride.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,7 @@ public class DeliveryPointService {
     private final DeliveryPointRepository deliveryPointRepository;
     private final AddressRepository addressRepository;
     private final AddressService addressService;
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Transactional
     public DeliveryPointResponse createDeliveryPoint(DeliveryPointRequest request) {
@@ -36,7 +38,7 @@ public class DeliveryPointService {
                 .clientPhone(request.getClientPhoneNumber())
                 .notes(request.getClientNote())
                 .status(DeliveryStatus.valueOf(request.getDeliveryStatus()))
-                .plannedTime(LocalDateTime.parse(request.getDeliveryTime()))
+                .plannedTime(LocalDateTime.parse(request.getDeliveryTime(), DATE_TIME_FORMATTER))
                 .build();
 
         DeliveryPoint savedDeliveryPoint = deliveryPointRepository.save(deliveryPoint);
@@ -70,7 +72,7 @@ public class DeliveryPointService {
         deliveryPoint.setClientPhone(request.getClientPhoneNumber());
         deliveryPoint.setNotes(request.getClientNote());
         deliveryPoint.setStatus(DeliveryStatus.valueOf(request.getDeliveryStatus()));
-        deliveryPoint.setPlannedTime(LocalDateTime.parse(request.getDeliveryTime()));
+        deliveryPoint.setPlannedTime(LocalDateTime.parse(request.getDeliveryTime(), DATE_TIME_FORMATTER));
 
         DeliveryPoint updatedDeliveryPoint = deliveryPointRepository.save(deliveryPoint);
         return mapToResponse(updatedDeliveryPoint);

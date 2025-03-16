@@ -3,7 +3,10 @@ package com.badier.badier_ride.entity;
 
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 import com.badier.badier_ride.enumeration.AlertPriority;
@@ -11,6 +14,8 @@ import com.badier.badier_ride.enumeration.AlertStatus;
 
 @Data
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "alerts")
 public class Alert {
     @Id

@@ -1,6 +1,5 @@
 package com.badier.badier_ride.controller;
 
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -20,17 +19,16 @@ public class DispatcherController {
     private final DispatcherService dispatcherService;
 
     @GetMapping("/profile")
-    @PreAuthorize("hasAuthority('DISPATCHER')")
+    @PreAuthorize("hasRole('DISPATCHER')")
     public ResponseEntity<DispatcherResponse> getProfile(Authentication authentication) {
         return ResponseEntity.ok(dispatcherService.getDispatcherProfile(authentication.getName()));
     }
 
     @PutMapping("/profile")
-    @PreAuthorize("hasAuthority('DISPATCHER')")
+    @PreAuthorize("hasRole('DISPATCHER')")
     public ResponseEntity<DispatcherResponse> updateProfile(
-            Authentication authentication, 
+            Authentication authentication,
             @RequestBody DispatcherProfileRequest request) {
         return ResponseEntity.ok(dispatcherService.updateDispatcherProfile(authentication.getName(), request));
     }
 }
-

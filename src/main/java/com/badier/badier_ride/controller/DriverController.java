@@ -20,23 +20,23 @@ public class DriverController {
     private final DriverService driverService;
 
     @GetMapping("/profile")
-    @PreAuthorize("hasAuthority('DRIVER')")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverResponse> getProfile(Authentication authentication) {
         return ResponseEntity.ok(driverService.getDriverProfile(authentication.getName()));
     }
 
     @PutMapping("/profile")
-    @PreAuthorize("hasAuthority('DRIVER')")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverResponse> updateProfile(
-            Authentication authentication, 
+            Authentication authentication,
             @RequestBody DriverProfileRequest request) {
         return ResponseEntity.ok(driverService.updateDriverProfile(authentication.getName(), request));
     }
 
     @PutMapping("/availability")
-    @PreAuthorize("hasAuthority('DRIVER')")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverResponse> updateAvailability(
-            Authentication authentication, 
+            Authentication authentication,
             @RequestParam Boolean isAvailable) {
         return ResponseEntity.ok(driverService.updateDriverAvailability(authentication.getName(), isAvailable));
     }

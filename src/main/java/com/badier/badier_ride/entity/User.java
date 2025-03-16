@@ -1,8 +1,13 @@
 package com.badier.badier_ride.entity;
 import com.badier.badier_ride.enumeration.UserRole;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,9 +40,11 @@ public class User implements UserDetails {
     private UserRole role;
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null; // Implement this method based on your requirements
-    }
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+    authorities.add(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+    return authorities;
+}
 
     @Override
     public boolean isAccountNonExpired() {
