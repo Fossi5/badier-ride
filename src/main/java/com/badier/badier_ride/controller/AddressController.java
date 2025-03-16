@@ -4,14 +4,8 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
@@ -20,28 +14,30 @@ import com.badier.badier_ride.service.AddressService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/add")
+@RequestMapping("/api/addresses")
 @RequiredArgsConstructor
 public class AddressController {
-
+    
     private final AddressService addressService;
-    
-    @PostMapping("/post")
-    public ResponseEntity<AddressResponse> createAddress(@RequestBody AddressRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(addressService.createAddress(request));
-    }
-    
-    @GetMapping("/{id}")
-    public ResponseEntity<AddressResponse> getAddress(@PathVariable Long id) {
-        return ResponseEntity.ok(addressService.getAddressResponseById(id));
-    }
     
     @GetMapping
     public ResponseEntity<List<AddressResponse>> getAllAddresses() {
         return ResponseEntity.ok(addressService.getAllAddresses());
     }
     
-    @PutMapping("/update/{id}")
+    @GetMapping("/{id}")
+    public ResponseEntity<AddressResponse> getAddressById(@PathVariable Long id) {
+        return ResponseEntity.ok(addressService.getAddressById(id));
+    }
+    
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DRIVER')")
+    public ResponseEntity<AddressResponse> createAddress(@RequestBody AddressRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(addressService.createAddress(request));
+    }
+    
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DRIVER')")
     public ResponseEntity<AddressResponse> updateAddress(
             @PathVariable Long id, 
             @RequestBody AddressRequest request) {
@@ -49,9 +45,15 @@ public class AddressController {
     }
     
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
         addressService.deleteAddress(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("/city/{city}")
+    public ResponseEntity<List<AddressResponse>> getAddressesByCity(@PathVariable String city) {
+        return ResponseEntity.ok(addressService.findAddressesByCity(city));
     }
     
     @PostMapping("/check-duplicates")

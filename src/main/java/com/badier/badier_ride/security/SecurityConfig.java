@@ -1,12 +1,13 @@
 package com.badier.badier_ride.security;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,9 +21,11 @@ import com.badier.badier_ride.repository.UserRepository;
 import com.badier.badier_ride.service.DatabaseUserDetailsService;
 
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
  
@@ -62,25 +65,38 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                // Endpoints publics
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/add/**").permitAll()
-                .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
-                .requestMatchers("/api/dispatcher/**").hasAnyAuthority("DISPATCHER")
-                .requestMatchers("/api/driver/**").hasAnyAuthority("DRIVER")
+                
+                // Gestion des adresses
+                .requestMatchers(HttpMethod.GET, "/api/addresses/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/addresses/**").hasAnyAuthority("ADMIN", "DRIVER")
+                .requestMatchers(HttpMethod.PUT, "/api/addresses/**").hasAnyAuthority("ADMIN", "DRIVER")
+                .requestMatchers(HttpMethod.DELETE, "/api/addresses/**").hasAuthority("ADMIN")
+                
+                // Gestion des points de livraison
+                .requestMatchers(HttpMethod.GET, "/api/delivery-points/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/delivery-points/**").hasAnyAuthority("ADMIN", "DISPATCHER")
+                .requestMatchers(HttpMethod.PUT, "/api/delivery-points/**").hasAnyAuthority("ADMIN", "DISPATCHER")
+                .requestMatchers(HttpMethod.DELETE, "/api/delivery-points/**").hasAnyAuthority("ADMIN", "DISPATCHER")
+                
+                // Gestion des routes (tournées)
+                .requestMatchers(HttpMethod.GET, "/api/routes/driver").hasAuthority("DRIVER")
+                .requestMatchers(HttpMethod.GET, "/api/routes/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyAuthority("ADMIN", "DISPATCHER")
+                .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyAuthority("ADMIN", "DISPATCHER", "DRIVER")
+                .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyAuthority("ADMIN", "DISPATCHER")
+                
+                // Endpoints d'administration
+                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                .requestMatchers("/api/dispatcher/**").hasAuthority("DISPATCHER")
+                .requestMatchers("/api/driver/**").hasAuthority("DRIVER")
+                
+                // Tout le reste nécessite authentification
                 .anyRequest().authenticated())
-        
-       /*  http
-                .sessionManagement((session) -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider((authenticationProvider))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
-        http.httpBasic(withDefaults());
-        return http.build();
-    }*/
-             .sessionManagement(session -> session
-
-
+            
+            .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)

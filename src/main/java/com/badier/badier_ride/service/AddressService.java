@@ -1,9 +1,10 @@
 package com.badier.badier_ride.service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
@@ -17,94 +18,87 @@ import lombok.RequiredArgsConstructor;
 public class AddressService {
 
     private final AddressRepository addressRepository;
-    
+
+    @Transactional
     public AddressResponse createAddress(AddressRequest request) {
-        // Vérifier si l'adresse existe déjà
-        Optional<Address> existingAddress = addressRepository.findByStreetAndCityAndPostalCodeAndCountry(
-            request.getStreet(), 
-            request.getCity(), 
-            request.getPostalCode(), 
-            request.getCountry()
-        );
-        
-        if (existingAddress.isPresent()) {
-            return mapToResponse(existingAddress.get());
-        }
-        
-        // Créer une nouvelle adresse
         Address address = Address.builder()
-            .street(request.getStreet())
-            .city(request.getCity())
-            .postalCode(request.getPostalCode())
-            .country(request.getCountry())
-            .latitude(request.getLatitude())
-            .longitude(request.getLongitude())
-            .isVerified(false)
-            .build();
-        
-        // Si les coordonnées ne sont pas fournies, on pourrait appeler un service de géocodage ici
-        
+                .street(request.getStreet())
+                .city(request.getCity())
+                .postalCode(request.getPostalCode())
+                .country(request.getCountry())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .isVerified(false)
+                .build();
+
         Address savedAddress = addressRepository.save(address);
         return mapToResponse(savedAddress);
     }
-    
-    public AddressResponse getAddressResponseById(Long id) {
+
+    public AddressResponse getAddressById(Long id) {
         Address address = addressRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
-        
+                .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
         return mapToResponse(address);
     }
-    
+
+    public AddressResponse getAddressResponseById(Long id) {
+        return getAddressById(id);
+    }
+
     public List<AddressResponse> getAllAddresses() {
         return addressRepository.findAll().stream()
-            .map(this::mapToResponse)
-            .toList();
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
-    
+
+    @Transactional
     public AddressResponse updateAddress(Long id, AddressRequest request) {
         Address address = addressRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
-        
-        // Mettre à jour les champs
+                .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
+
         address.setStreet(request.getStreet());
         address.setCity(request.getCity());
         address.setPostalCode(request.getPostalCode());
         address.setCountry(request.getCountry());
         address.setLatitude(request.getLatitude());
         address.setLongitude(request.getLongitude());
-        
-        // Marquer comme non vérifié après modification
-        address.setIsVerified(false);
-        
+        address.setIsVerified(false); // Reset verification status after update
+
         Address updatedAddress = addressRepository.save(address);
         return mapToResponse(updatedAddress);
     }
-    
+
+    @Transactional
     public void deleteAddress(Long id) {
         addressRepository.deleteById(id);
     }
-    
+
+    public List<AddressResponse> findAddressesByCity(String city) {
+        return addressRepository.findByCity(city).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<AddressResponse> findPotentialDuplicates(AddressRequest request) {
         return addressRepository.findPotentialDuplicates(
-            request.getStreet(), 
-            request.getCity(),
-            request.getPostalCode()
+                request.getStreet(),
+                request.getCity(),
+                request.getPostalCode()
         ).stream()
-        .map(this::mapToResponse)
-        .toList();
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
-    
-    // Méthode privée pour mapper de l'entité vers DTO
-    private AddressResponse mapToResponse(Address address) {
+
+    public AddressResponse mapToResponse(Address address) {
         return AddressResponse.builder()
-            .id(address.getId())
-            .street(address.getStreet())
-            .city(address.getCity())
-            .postalCode(address.getPostalCode())
-            .country(address.getCountry())
-            .latitude(address.getLatitude())
-            .longitude(address.getLongitude())
-            .isVerified(address.getIsVerified())
-            .build();
+                .id(address.getId())
+                .street(address.getStreet())
+                .city(address.getCity())
+                .postalCode(address.getPostalCode())
+                .country(address.getCountry())
+                .latitude(address.getLatitude())
+                .longitude(address.getLongitude())
+                .isVerified(address.getIsVerified())
+                .build();
     }
 }

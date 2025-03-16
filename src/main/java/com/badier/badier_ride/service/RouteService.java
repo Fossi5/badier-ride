@@ -1,6 +1,7 @@
 package com.badier.badier_ride.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -8,19 +9,16 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.badier.badier_ride.dto.DeliveryPointResponse;
 import com.badier.badier_ride.dto.RouteRequest;
 import com.badier.badier_ride.dto.RouteResponse;
 import com.badier.badier_ride.dto.UserSummaryResponse;
 import com.badier.badier_ride.entity.DeliveryPoint;
-import com.badier.badier_ride.entity.Dispatcher;
-import com.badier.badier_ride.entity.Driver;
 import com.badier.badier_ride.entity.Route;
+import com.badier.badier_ride.entity.User;
 import com.badier.badier_ride.enumeration.RouteStatus;
 import com.badier.badier_ride.repository.DeliveryPointRepository;
-import com.badier.badier_ride.repository.DispatcherRepository;
-import com.badier.badier_ride.repository.DriverRepository;
 import com.badier.badier_ride.repository.RouteRepository;
+import com.badier.badier_ride.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,19 +27,20 @@ import lombok.RequiredArgsConstructor;
 public class RouteService {
 
     private final RouteRepository routeRepository;
-    private final DriverRepository driverRepository;
-    private final DispatcherRepository dispatcherRepository;
+    private final UserRepository userRepository;
     private final DeliveryPointRepository deliveryPointRepository;
     private final DeliveryPointService deliveryPointService;
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Transactional
     public RouteResponse createRoute(RouteRequest request) {
         // Récupérer le chauffeur
-        Driver driver = driverRepository.findById(request.getDriverId())
+        User driver = userRepository.findById(request.getDriverId())
                 .orElseThrow(() -> new RuntimeException("Chauffeur non trouvé avec ID: " + request.getDriverId()));
 
         // Récupérer le répartiteur
-        Dispatcher dispatcher = dispatcherRepository.findById(request.getDispatcherId())
+        User dispatcher = userRepository.findById(request.getDispatcherId())
                 .orElseThrow(() -> new RuntimeException("Répartiteur non trouvé avec ID: " + request.getDispatcherId()));
 
         // Récupérer les points de livraison
@@ -60,8 +59,8 @@ public class RouteService {
                 .dispatcher(dispatcher)
                 .deliveryPoints(deliveryPoints)
                 .status(RouteStatus.valueOf(request.getStatus()))
-                .startTime(LocalDateTime.parse(request.getStartTime()))
-                .endTime(LocalDateTime.parse(request.getEndTime()))
+                .startTime(LocalDateTime.parse(request.getStartTime(), DATE_TIME_FORMATTER))
+                .endTime(LocalDateTime.parse(request.getEndTime(), DATE_TIME_FORMATTER))
                 .notes(request.getNotes())
                 .build();
 
@@ -93,6 +92,12 @@ public class RouteService {
                 .collect(Collectors.toList());
     }
 
+    public List<RouteResponse> getRoutesByDriverUsername(String username) {
+        User driver = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + username));
+        return getRoutesByDriver(driver.getId());
+    }
+
     public List<RouteResponse> getRoutesByDispatcher(Long dispatcherId) {
         return routeRepository.findByDispatcherId(dispatcherId).stream()
                 .map(this::mapToResponse)
@@ -106,14 +111,14 @@ public class RouteService {
 
         // Mise à jour du chauffeur si nécessaire
         if (request.getDriverId() != null && !request.getDriverId().equals(route.getDriver().getId())) {
-            Driver driver = driverRepository.findById(request.getDriverId())
+            User driver = userRepository.findById(request.getDriverId())
                     .orElseThrow(() -> new RuntimeException("Chauffeur non trouvé avec ID: " + request.getDriverId()));
             route.setDriver(driver);
         }
 
         // Mise à jour du répartiteur si nécessaire
         if (request.getDispatcherId() != null && !request.getDispatcherId().equals(route.getDispatcher().getId())) {
-            Dispatcher dispatcher = dispatcherRepository.findById(request.getDispatcherId())
+            User dispatcher = userRepository.findById(request.getDispatcherId())
                     .orElseThrow(() -> new RuntimeException("Répartiteur non trouvé avec ID: " + request.getDispatcherId()));
             route.setDispatcher(dispatcher);
         }
@@ -130,8 +135,8 @@ public class RouteService {
         // Mise à jour des autres champs
         if (request.getName() != null) route.setName(request.getName());
         if (request.getStatus() != null) route.setStatus(RouteStatus.valueOf(request.getStatus()));
-        if (request.getStartTime() != null) route.setStartTime(LocalDateTime.parse(request.getStartTime()));
-        if (request.getEndTime() != null) route.setEndTime(LocalDateTime.parse(request.getEndTime()));
+        if (request.getStartTime() != null) route.setStartTime(LocalDateTime.parse(request.getStartTime(), DATE_TIME_FORMATTER));
+        if (request.getEndTime() != null) route.setEndTime(LocalDateTime.parse(request.getEndTime(), DATE_TIME_FORMATTER));
         if (request.getNotes() != null) route.setNotes(request.getNotes());
 
         Route updatedRoute = routeRepository.save(route);
@@ -202,8 +207,8 @@ public class RouteService {
         return RouteResponse.builder()
                 .id(route.getId())
                 .name(route.getName())
-                .driver(mapDriverToSummary(route.getDriver()))
-                .dispatcher(mapDispatcherToSummary(route.getDispatcher()))
+                .driver(mapUserToSummary(route.getDriver()))
+                .dispatcher(mapUserToSummary(route.getDispatcher()))
                 .deliveryPoints(route.getDeliveryPoints().stream()
                         .map(deliveryPointService::mapToResponse)
                         .collect(Collectors.toList()))
@@ -214,19 +219,11 @@ public class RouteService {
                 .build();
     }
 
-    private UserSummaryResponse mapDriverToSummary(Driver driver) {
+    private UserSummaryResponse mapUserToSummary(User user) {
         return UserSummaryResponse.builder()
-                .id(driver.getId())
-                .username(driver.getUsername())
-                .email(driver.getEmail())
-                .build();
-    }
-
-    private UserSummaryResponse mapDispatcherToSummary(Dispatcher dispatcher) {
-        return UserSummaryResponse.builder()
-                .id(dispatcher.getId())
-                .username(dispatcher.getUsername())
-                .email(dispatcher.getEmail())
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
                 .build();
     }
 }

@@ -4,15 +4,12 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.annotation.*;
 
 import com.badier.badier_ride.dto.RouteRequest;
 import com.badier.badier_ride.dto.RouteResponse;
@@ -24,64 +21,94 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/routes")
 @RequiredArgsConstructor
 public class RouteController {
-
+    
     private final RouteService routeService;
-
-    @PostMapping
-    public ResponseEntity<RouteResponse> createRoute(@RequestBody RouteRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<RouteResponse> getRoute(@PathVariable Long id) {
-        return ResponseEntity.ok(routeService.getRouteById(id));
-    }
-
+    
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<RouteResponse>> getAllRoutes() {
         return ResponseEntity.ok(routeService.getAllRoutes());
     }
-
+    
+    @GetMapping("/driver")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<List<RouteResponse>> getMyRoutes(Authentication authentication) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(routeService.getRoutesByDriverUsername(username));
+    }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<RouteResponse> getRoute(@PathVariable Long id) {
+        RouteResponse route = routeService.getRouteById(id);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        
+        // Si c'est un driver, vérifier que la tournée lui est assignée
+        if (auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DRIVER"))) {
+            if (!route.getDriver().getUsername().equals(auth.getName())) {
+                throw new AccessDeniedException("Vous n'avez pas accès à cette tournée");
+            }
+        }
+        
+        return ResponseEntity.ok(route);
+    }
+    
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<RouteResponse>> getRoutesByStatus(@PathVariable String status) {
         return ResponseEntity.ok(routeService.getRoutesByStatus(status));
     }
-
-    @GetMapping("/driver/{driverId}")
-    public ResponseEntity<List<RouteResponse>> getRoutesByDriver(@PathVariable Long driverId) {
-        return ResponseEntity.ok(routeService.getRoutesByDriver(driverId));
-    }
-
+    
     @GetMapping("/dispatcher/{dispatcherId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<RouteResponse>> getRoutesByDispatcher(@PathVariable Long dispatcherId) {
         return ResponseEntity.ok(routeService.getRoutesByDispatcher(dispatcherId));
     }
-
+    
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
+    public ResponseEntity<RouteResponse> createRoute(@RequestBody RouteRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
+    }
+    
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<RouteResponse> updateRoute(@PathVariable Long id, @RequestBody RouteRequest request) {
         return ResponseEntity.ok(routeService.updateRoute(id, request));
     }
-
+    
     @PutMapping("/{id}/status")
     public ResponseEntity<RouteResponse> updateRouteStatus(@PathVariable Long id, @RequestParam String status) {
+        RouteResponse route = routeService.getRouteById(id);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        
+        // Si c'est un driver, vérifier que la tournée lui est assignée
+        if (auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DRIVER"))) {
+            if (!route.getDriver().getUsername().equals(auth.getName())) {
+                throw new AccessDeniedException("Vous n'avez pas accès à cette tournée");
+            }
+        }
+        
         return ResponseEntity.ok(routeService.updateRouteStatus(id, status));
     }
-
+    
     @PostMapping("/{routeId}/delivery-points/{deliveryPointId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<RouteResponse> addDeliveryPointToRoute(
             @PathVariable Long routeId, 
             @PathVariable Long deliveryPointId) {
         return ResponseEntity.ok(routeService.addDeliveryPointToRoute(routeId, deliveryPointId));
     }
-
+    
     @DeleteMapping("/{routeId}/delivery-points/{deliveryPointId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<RouteResponse> removeDeliveryPointFromRoute(
             @PathVariable Long routeId, 
             @PathVariable Long deliveryPointId) {
         return ResponseEntity.ok(routeService.removeDeliveryPointFromRoute(routeId, deliveryPointId));
     }
-
+    
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<Void> deleteRoute(@PathVariable Long id) {
         routeService.deleteRoute(id);
         return ResponseEntity.noContent().build();
