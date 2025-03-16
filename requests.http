@@ -1,0 +1,133 @@
+### Variables
+@baseUrl = http://localhost:8080
+@authToken = votre_token_jwt
+### Authentification
+# @name login
+POST {{baseUrl}}/api/auth/authenticate
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "password"
+}
+
+### Récupération du token après login
+@authToken = {{login.response.body.token}}
+
+### Création d'un dispatacher (admin)
+POST {{baseUrl}}/api/admin/dispatchers
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "username": "dispatcher1",
+  "password": "password123",
+  "email": "dispatcher1@badierride.com",
+  "department": "Logistique"
+}
+
+### Liste des dispatchers
+GET {{baseUrl}}/api/admin/dispatchers
+Authorization: Bearer {{authToken}}
+
+### Création d'un chauffeur (admin)
+POST {{baseUrl}}/api/admin/drivers
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "username": "driver2",
+  "password": "password123",
+  "email": "driver1@badierride.com",
+  "phoneNumber": "0612345678",
+  "vehicleType": "Van",
+  "isAvailable": true,
+  "latitude": 48.8566,
+  "longitude": 2.3522
+}
+
+### Liste des chauffeurs
+GET {{baseUrl}}/api/admin/drivers
+Authorization: Bearer {{authToken}}
+
+### Création d'une adresse
+POST {{baseUrl}}/api/addresses
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "street": "123 Rue de Paris",
+  "city": "Paris",
+  "postalCode": "75001",
+  "country": "France",
+  "latitude": 48.8566,
+  "longitude": 2.3522
+}
+
+### Liste des adresses
+GET {{baseUrl}}/api/addresses
+Authorization: Bearer {{authToken}}
+
+### Création d'un point de livraison
+POST {{baseUrl}}/api/delivery-points
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "addressId": 1,
+  "clientName": "Jean Dupont",
+  "clientPhoneNumber": "0612345678",
+  "clientEmail": "client@example.com",
+  "clientNote": "Livraison au 3ème étage",
+  "deliveryNote": "Fragile",
+  "deliveryTime": "2025-03-20T14:30:00",
+  "deliveryDate": "2025-03-20",
+  "deliveryStatus": "PENDING"
+}
+
+### Liste des points de livraison
+GET {{baseUrl}}/api/delivery-points
+Authorization: Bearer {{authToken}}
+
+### Création d'une route (tournée)
+### TODO: FIX erreur acces non autotisé
+POST {{baseUrl}}/api/routes
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "name": "Tournée Paris Centre",
+  "driverId": 1,
+  "dispatcherId": 1,
+  "deliveryPointIds": [1],
+  "startTime": "2025-03-20T09:00:00",
+  "endTime": "2025-03-20T17:00:00",
+  "notes": "Tournée prioritaire",
+  "status": "PLANNED"
+}
+
+### Liste des routes
+GET {{baseUrl}}/api/routes
+Authorization: Bearer {{authToken}}
+
+### Profil chauffeur (avec authentification chauffeur)
+# Nécessite de se connecter en tant que chauffeur d'abord
+# @name driverLogin
+POST {{baseUrl}}/api/auth/authenticate
+Content-Type: application/json
+
+{
+  "username": "driver1",
+  "password": "password123"
+}
+
+### Récupération du token chauffeur
+@driverToken = {{driverLogin.response.body.token}}
+
+### Obtenir le profil chauffeur
+GET {{baseUrl}}/api/driver/profile
+Authorization: Bearer {{driverToken}}
+
+### Mettre à jour la disponibilité du chauffeur
+PUT {{baseUrl}}/api/driver/availability?isAvailable=false
+Authorization: Bearer {{driverToken}}
