@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@authToken = votre_token_jwt
+@authToken = yJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0MjI0MTkzOSwiZXhwIjoxNzQyMzI4MzM5fQ.5lKl3Ww5weNGVhbu74kvXbbSBFpDbg1D9CWthcSmL9E
 ### Authentification
 # @name login
 POST {{baseUrl}}/api/auth/authenticate
