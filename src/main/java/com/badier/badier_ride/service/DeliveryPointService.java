@@ -25,7 +25,7 @@ public class DeliveryPointService {
     private final DeliveryPointRepository deliveryPointRepository;
     private final AddressRepository addressRepository;
     private final AddressService addressService;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     @Transactional
     public DeliveryPointResponse createDeliveryPoint(DeliveryPointRequest request) {

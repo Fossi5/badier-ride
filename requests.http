@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@authToken = yJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0MjI0MTkzOSwiZXhwIjoxNzQyMzI4MzM5fQ.5lKl3Ww5weNGVhbu74kvXbbSBFpDbg1D9CWthcSmL9E
+@authToken =eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0Mjc1ODY4NCwiZXhwIjoxNzQyODQ1MDg0fQ.bm28QWg3iD2KY0Lb0Jwin_P-oy1nEJGjLolg0vol7YE
 ### Authentification
 # @name login
 POST {{baseUrl}}/api/auth/authenticate
@@ -117,7 +117,7 @@ POST {{baseUrl}}/api/auth/authenticate
 Content-Type: application/json
 
 {
-  "username": "driver1",
+  "username": "driver2",
   "password": "password123"
 }
 
