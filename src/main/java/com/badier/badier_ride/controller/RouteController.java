@@ -11,8 +11,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
+import com.badier.badier_ride.dto.DeliveryPointRequest;
+import com.badier.badier_ride.dto.DeliveryPointResponse;
 import com.badier.badier_ride.dto.RouteRequest;
 import com.badier.badier_ride.dto.RouteResponse;
+import com.badier.badier_ride.service.DeliveryPointService;
 import com.badier.badier_ride.service.RouteService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class RouteController {
     
     private final RouteService routeService;
+    private final DeliveryPointService deliveryPointService;
     
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
@@ -113,4 +117,20 @@ public class RouteController {
         routeService.deleteRoute(id);
         return ResponseEntity.noContent().build();
     }
+    @PostMapping("/{routeId}/addresses/{addressId}")
+@PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER', 'DRIVER')")
+public ResponseEntity<RouteResponse> addAddressToRoute(
+    @PathVariable Long routeId, 
+    @PathVariable Long addressId,
+    @RequestBody(required = false) DeliveryPointRequest deliveryPointRequest) {
+    
+    // Créer un point de livraison avec cette adresse si nécessaire
+    DeliveryPointResponse deliveryPoint = deliveryPointService.createDeliveryPointFromAddress(
+        addressId, 
+        deliveryPointRequest != null ? deliveryPointRequest : new DeliveryPointRequest()
+    );
+    
+    // Ajouter ce point de livraison à la route
+    return ResponseEntity.ok(routeService.addDeliveryPointToRoute(routeId, deliveryPoint.getId()));
+}
 }

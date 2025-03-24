@@ -120,4 +120,22 @@ public class DeliveryPointService {
                 .actualTime(deliveryPoint.getActualTime())
                 .build();
     }
+    public DeliveryPointResponse createDeliveryPointFromAddress(Long addressId, DeliveryPointRequest defaultValues) {
+        Address address = addressRepository.findById(addressId)
+            .orElseThrow(() -> new RuntimeException("Address not found with ID: " + addressId));
+        
+        DeliveryPoint deliveryPoint = DeliveryPoint.builder()
+            .address(address)
+            .clientName(defaultValues.getClientName() != null ? defaultValues.getClientName() : "Client")
+            .clientPhone(defaultValues.getClientPhoneNumber())
+            .notes(defaultValues.getClientNote())
+            .status(DeliveryStatus.PENDING)
+            .plannedTime(defaultValues.getDeliveryTime() != null ? 
+                LocalDateTime.parse(defaultValues.getDeliveryTime(), DATE_TIME_FORMATTER) : 
+                LocalDateTime.now().plusDays(1))
+            .build();
+        
+        DeliveryPoint savedDeliveryPoint = deliveryPointRepository.save(deliveryPoint);
+        return mapToResponse(savedDeliveryPoint);
+    }
 }

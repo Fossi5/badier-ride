@@ -31,7 +31,7 @@ public class AddressController {
     }
     
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DRIVER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER', 'DRIVER')")
     public ResponseEntity<AddressResponse> createAddress(@RequestBody AddressRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(addressService.createAddress(request));
     }

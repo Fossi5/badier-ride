@@ -232,4 +232,16 @@ public class RouteService {
                 .email(user.getEmail())
                 .build();
     }
+    public Long findDeliveryPointByAddressInRoute(Long routeId, Long addressId) {
+        Route route = routeRepository.findById(routeId)
+            .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+            
+        for (DeliveryPoint point : route.getDeliveryPoints()) {
+            if (point.getAddress().getId().equals(addressId)) {
+                return point.getId();
+            }
+        }
+        
+        return null;
+    }
 }
