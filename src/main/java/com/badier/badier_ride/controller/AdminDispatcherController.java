@@ -32,6 +32,7 @@ public class AdminDispatcherController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<DispatcherResponse>> getAllDispatchers() {
         return ResponseEntity.ok(adminDispatcherService.getAllDispatchers());
     }

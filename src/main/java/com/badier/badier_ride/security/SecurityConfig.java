@@ -105,6 +105,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
 
                         // Endpoints d'administration
+                       // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Endpoints d'administration
+                        .requestMatchers("/api/admin/drivers/available").hasAnyRole("ADMIN", "DISPATCHER")
+                        .requestMatchers("/api/admin/dispatchers").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/dispatcher/**").hasRole("DISPATCHER")
                         .requestMatchers("/api/driver/**").hasRole("DRIVER")
