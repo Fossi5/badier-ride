@@ -100,7 +100,7 @@ public class SecurityConfig {
                         // Gestion des routes (tournées)
                         .requestMatchers(HttpMethod.GET, "/api/routes/driver").hasRole("DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/routes/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
+                        .requestMatchers(HttpMethod.POST, "/api/routes/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
 
@@ -138,7 +138,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5174"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

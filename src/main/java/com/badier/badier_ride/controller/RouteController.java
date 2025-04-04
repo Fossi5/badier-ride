@@ -69,10 +69,13 @@ public class RouteController {
     }
     
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
-    public ResponseEntity<RouteResponse> createRoute(@RequestBody RouteRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
-    }
+@PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
+public ResponseEntity<RouteResponse> createRoute(@RequestBody RouteRequest request) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    System.out.println("Authenticated user: " + auth.getName());
+    System.out.println("Roles: " + auth.getAuthorities());
+    return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
+}
     
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")

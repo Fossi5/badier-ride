@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:8080
-@authToken =eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0MzQzMjQ5MywiZXhwIjoxNzQzNTE4ODkzfQ.t6LedEoSMDnKHMGMl4ruqcjMFzycPJUTtv8M3dg9msY
+@authToken =eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc0Mzc3ODM4OSwiZXhwIjoxNzQzODY0Nzg5fQ.WGoMxpfxrZOGVT3Ipa8ot3khifTtTScxtH-vLcSCGE8
 ### Authentification
 # @name login
 POST {{baseUrl}}/api/auth/authenticate
@@ -20,7 +20,7 @@ Content-Type: application/json
 Authorization: Bearer {{authToken}}
 
 {
-  "username": "dispatcher1",
+  "username": "dispatcher2",
   "password": "password123",
   "email": "dispatcher1@badierride.com",
   "department": "Logistique"
@@ -97,11 +97,11 @@ Authorization: Bearer {{authToken}}
 
 {
   "name": "Tournée Paris Centre",
-  "driverId": 1,
-  "dispatcherId": 1,
-  "deliveryPointIds": [2],
-  "startTime": "2025-03-20T09:00:00",
-  "endTime": "2025-03-20T17:00:00",
+  "driverId": 4,
+  "dispatcherId": 2,
+  "deliveryPointIds": [1],
+  "startTime": "2025-05-20T09:00:00",
+  "endTime": "2025-05-20T17:00:00",
   "notes": "Tournée prioritaire",
   "status": "PLANNED"
 }

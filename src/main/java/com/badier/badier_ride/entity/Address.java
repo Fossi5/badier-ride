@@ -1,5 +1,6 @@
 package com.badier.badier_ride.entity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +22,8 @@ public class Address {
     @Column(nullable = false)
     private String city;
 
-    @Column(name = "postal_code")
+    @Column(name = "postal_code", nullable = false)
+    @Pattern(regexp = "\\d{4}", message = "Le code postal doit contenir exactement 4 chiffres")
     private String postalCode;
 
     private String country;
