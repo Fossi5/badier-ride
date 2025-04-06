@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.badier.badier_ride.dto.AddressRequest;
+import com.badier.badier_ride.dto.AddressResponse;
 import com.badier.badier_ride.dto.DeliveryPointRequest;
 import com.badier.badier_ride.dto.DeliveryPointResponse;
 import com.badier.badier_ride.entity.Address;
@@ -29,8 +31,21 @@ public class DeliveryPointService {
 
     @Transactional
     public DeliveryPointResponse createDeliveryPoint(DeliveryPointRequest request) {
-        Address address = addressRepository.findById(request.getAddressId())
-                .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + request.getAddressId()));
+        // Gestion de l'adresse - soit existante, soit nouvelle
+        Address address;
+        
+        if (request.getAddress() != null) {
+            // Création d'une nouvelle adresse
+            AddressResponse createdAddress = addressService.createAddress(request.getAddress());
+            address = addressRepository.findById(createdAddress.getId())
+                    .orElseThrow(() -> new RuntimeException("Impossible de trouver l'adresse nouvellement créée"));
+        } else if (request.getAddressId() != null) {
+            // Utilisation d'une adresse existante
+            address = addressRepository.findById(request.getAddressId())
+                    .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + request.getAddressId()));
+        } else {
+            throw new RuntimeException("Une adresse ou un ID d'adresse doit être fourni");
+        }
 
         DeliveryPoint deliveryPoint = DeliveryPoint.builder()
                 .address(address)
@@ -62,7 +77,15 @@ public class DeliveryPointService {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Point de livraison non trouvé avec ID: " + id));
 
-        if (request.getAddressId() != null && !request.getAddressId().equals(deliveryPoint.getAddress().getId())) {
+        // Si une nouvelle adresse est fournie, on la crée
+        if (request.getAddress() != null) {
+            AddressResponse createdAddress = addressService.createAddress(request.getAddress());
+            Address address = addressRepository.findById(createdAddress.getId())
+                    .orElseThrow(() -> new RuntimeException("Impossible de trouver l'adresse nouvellement créée"));
+            deliveryPoint.setAddress(address);
+        } 
+        // Sinon si un ID d'adresse est fourni et qu'il est différent de l'adresse actuelle
+        else if (request.getAddressId() != null && !request.getAddressId().equals(deliveryPoint.getAddress().getId())) {
             Address address = addressRepository.findById(request.getAddressId())
                     .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + request.getAddressId()));
             deliveryPoint.setAddress(address);
@@ -120,6 +143,7 @@ public class DeliveryPointService {
                 .actualTime(deliveryPoint.getActualTime())
                 .build();
     }
+    
     public DeliveryPointResponse createDeliveryPointFromAddress(Long addressId, DeliveryPointRequest defaultValues) {
         Address address = addressRepository.findById(addressId)
             .orElseThrow(() -> new RuntimeException("Address not found with ID: " + addressId));

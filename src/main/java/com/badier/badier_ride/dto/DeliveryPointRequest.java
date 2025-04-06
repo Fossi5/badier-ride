@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DeliveryPointRequest {
     private Long addressId;
+    private AddressRequest address; 
     private String clientName;
     private String clientPhoneNumber;
     private String clientEmail;
