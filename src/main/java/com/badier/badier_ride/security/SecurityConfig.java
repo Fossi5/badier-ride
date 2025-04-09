@@ -76,14 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/add/**").permitAll()
 
                         // Gestion des adresses
-                        /*
-                         * .requestMatchers(HttpMethod.GET, "/api/addresses/**").authenticated()
-                         * .requestMatchers(HttpMethod.POST, "/api/addresses/**").hasAnyRole("ADMIN",
-                         * "DRIVER")
-                         * .requestMatchers(HttpMethod.PUT, "/api/addresses/**").hasAnyRole("ADMIN",
-                         * "DRIVER")
-                         * .requestMatchers(HttpMethod.DELETE, "/api/addresses/**").hasRole("ADMIN")
-                         */
+                        
                         // Gestion des adresses
                         .requestMatchers(HttpMethod.GET, "/api/addresses/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/addresses/**").hasAnyRole("ADMIN", "DISPATCHER")
