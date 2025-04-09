@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.badier.badier_ride.enumeration.RouteStatus;
@@ -32,6 +33,11 @@ public class Route {
     @JoinColumn(name = "dispatcher_id")
     private User dispatcher;
 
+    // Relation ManyToMany remplacée par OneToMany vers la table d'association
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RouteDeliveryPoint> routeDeliveryPoints = new ArrayList<>();
+
+    // Maintien de la relation d'origine pour compatibilité avec le code existant
     @ManyToMany
     @JoinTable(
         name = "route_delivery_points",
@@ -50,4 +56,30 @@ public class Route {
     private LocalDateTime endTime;
 
     private String notes;
+    
+    // Méthode utilitaire pour ajouter un point de livraison avec un ordre spécifique
+    public void addDeliveryPoint(DeliveryPoint deliveryPoint, Integer order, Boolean isStart, Boolean isEnd) {
+        RouteDeliveryPoint rdp = new RouteDeliveryPoint();
+        rdp.setRoute(this);
+        rdp.setDeliveryPoint(deliveryPoint);
+        rdp.setSequenceOrder(order);
+        rdp.setIsStartPoint(isStart);
+        rdp.setIsEndPoint(isEnd);
+        
+        this.routeDeliveryPoints.add(rdp);
+        
+        // Maintenir la liste deliveryPoints synchronisée
+        if (this.deliveryPoints == null) {
+            this.deliveryPoints = new ArrayList<>();
+        }
+        if (!this.deliveryPoints.contains(deliveryPoint)) {
+            this.deliveryPoints.add(deliveryPoint);
+        }
+    }
+    
+    // Méthode pour supprimer un point de livraison
+    public void removeDeliveryPoint(DeliveryPoint deliveryPoint) {
+        this.routeDeliveryPoints.removeIf(rdp -> rdp.getDeliveryPoint().equals(deliveryPoint));
+        this.deliveryPoints.remove(deliveryPoint);
+    }
 }

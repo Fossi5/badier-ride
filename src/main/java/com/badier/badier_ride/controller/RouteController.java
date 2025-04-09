@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.badier.badier_ride.dto.DeliveryPointRequest;
 import com.badier.badier_ride.dto.DeliveryPointResponse;
+import com.badier.badier_ride.dto.RoutePointsOrderRequest;
 import com.badier.badier_ride.dto.RouteRequest;
 import com.badier.badier_ride.dto.RouteResponse;
 import com.badier.badier_ride.service.DeliveryPointService;
@@ -136,4 +137,13 @@ public ResponseEntity<RouteResponse> addAddressToRoute(
     // Ajouter ce point de livraison à la route
     return ResponseEntity.ok(routeService.addDeliveryPointToRoute(routeId, deliveryPoint.getId()));
 }
+ 
+    @PutMapping("/{routeId}/delivery-points/order")
+    public ResponseEntity<RouteResponse> updateDeliveryPointsOrder(
+            @PathVariable Long routeId,
+            @RequestBody RoutePointsOrderRequest request) {
+        
+        RouteResponse updatedRoute = routeService.updateRoutePointsOrder(routeId, request.getOrderedPoints());
+        return ResponseEntity.ok(updatedRoute);
+    }
 }

@@ -3,6 +3,7 @@ package com.badier.badier_ride.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,9 @@ import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.entity.Driver;
 import com.badier.badier_ride.entity.Location;
 import com.badier.badier_ride.entity.Route;
+import com.badier.badier_ride.entity.RouteDeliveryPoint;
 import com.badier.badier_ride.repository.DriverRepository;
+import com.badier.badier_ride.repository.RouteDeliveryPointRepository;
 import com.badier.badier_ride.repository.RouteRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +33,8 @@ public class RouteOptimizationService {
     
     @Autowired
     private MapsApiService mapsApiService;
+
+    private final RouteDeliveryPointRepository routeDeliveryPointRepository = null;
     
     /**
      * Optimise l'ordre des points de livraison pour une tournée donnée
@@ -263,4 +268,109 @@ public class RouteOptimizationService {
         // Retourner la distance en kilomètres
         return totalDistance / 1000.0;
     }
+    // À ajouter dans votre RouteOptimizationService.java existant
+
+/**
+ * Optimise l'ordre des points de livraison en respectant les points de départ et d'arrivée définis
+ */
+@Transactional
+public Route optimizeRouteWithFixedPoints(Long routeId) {
+    log.info("Optimisation de la tournée avec ID: {} en respectant les points fixes", routeId);
+    
+    Route route = routeRepository.findById(routeId)
+            .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
+    
+    // Récupérer tous les points de livraison avec leur ordre
+    List<RouteDeliveryPoint> allPoints = routeDeliveryPointRepository.findByRouteIdOrderBySequenceOrderAsc(routeId);
+    
+    if (allPoints.isEmpty()) {
+        log.warn("Aucun point de livraison trouvé pour la tournée {}", routeId);
+        return route;
+    }
+    
+    // Identifier les points de départ et d'arrivée
+    RouteDeliveryPoint startPoint = allPoints.stream()
+            .filter(p -> Boolean.TRUE.equals(p.getIsStartPoint()))
+            .findFirst()
+            .orElse(null);
+    
+    RouteDeliveryPoint endPoint = allPoints.stream()
+            .filter(p -> Boolean.TRUE.equals(p.getIsEndPoint()))
+            .findFirst()
+            .orElse(null);
+    
+    // Liste des points à optimiser (tous sauf départ et arrivée)
+    List<DeliveryPoint> pointsToOptimize = allPoints.stream()
+            .filter(p -> !Boolean.TRUE.equals(p.getIsStartPoint()) && !Boolean.TRUE.equals(p.getIsEndPoint()))
+            .map(RouteDeliveryPoint::getDeliveryPoint)
+            .collect(Collectors.toList());
+    
+    // Position de départ pour l'optimisation
+    Location startLocation;
+    if (startPoint != null) {
+        // Utiliser le point de départ défini
+        DeliveryPoint definedStart = startPoint.getDeliveryPoint();
+        startLocation = new Location();
+        startLocation.setLatitude(definedStart.getAddress().getLatitude());
+        startLocation.setLongitude(definedStart.getAddress().getLongitude());
+    } else {
+        // Fallback: position du chauffeur ou valeur par défaut
+        Driver driver = driverRepository.findById(route.getDriver().getId())
+                .orElseThrow(() -> new RuntimeException("Chauffeur non trouvé pour la tournée: " + route.getId()));
+        
+        startLocation = driver.getCurrentLocation();
+        if (startLocation == null) {
+            startLocation = new Location();
+            startLocation.setLatitude(48.8566); // Valeur par défaut
+            startLocation.setLongitude(2.3522);
+        }
+    }
+    
+    // Optimiser les points intermédiaires
+    List<DeliveryPoint> optimizedMiddlePoints;
+    try {
+        log.info("Optimisation des {} points intermédiaires avec Google Maps", pointsToOptimize.size());
+        optimizedMiddlePoints = optimizeWithGoogleMaps(startLocation, pointsToOptimize);
+    } catch (Exception e) {
+        log.error("Erreur lors de l'appel à l'API Google Maps, utilisation de l'algorithme de fallback", e);
+        optimizedMiddlePoints = findOptimalOrderFallback(startLocation, pointsToOptimize);
+    }
+    
+    // Construire la liste finale avec le point de départ, les points optimisés et le point d'arrivée
+    List<DeliveryPoint> finalOrder = new ArrayList<>();
+    
+    // Ajouter le point de départ s'il existe
+    if (startPoint != null) {
+        finalOrder.add(startPoint.getDeliveryPoint());
+    }
+    
+    // Ajouter les points optimisés
+    finalOrder.addAll(optimizedMiddlePoints);
+    
+    // Ajouter le point d'arrivée s'il existe
+    if (endPoint != null) {
+        finalOrder.add(endPoint.getDeliveryPoint());
+    }
+    
+    // Mettre à jour l'ordre dans la table d'association
+    for (int i = 0; i < finalOrder.size(); i++) {
+        DeliveryPoint point = finalOrder.get(i);
+        
+        // Trouver l'entrée correspondante dans la table d'association
+        RouteDeliveryPoint rdp = allPoints.stream()
+                .filter(p -> p.getDeliveryPoint().getId().equals(point.getId()))
+                .findFirst()
+                .orElse(null);
+        
+        if (rdp != null) {
+            rdp.setSequenceOrder(i);
+            
+            // Conserver les statuts de départ et d'arrivée
+            // (ne pas les réinitialiser ici car ils sont déjà corrects)
+        }
+    }
+    
+    // Sauvegarder les modifications
+    return routeRepository.save(route);
+}
 }
