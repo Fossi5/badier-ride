@@ -1,7 +1,6 @@
 services:
   - type: web
     name: badier-ride-backend
-    env: java
     buildCommand: ./mvnw clean install
     startCommand: java -jar target/badier-ride-0.0.1-SNAPSHOT.jar
     envVars:
