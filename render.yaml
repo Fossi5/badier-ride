@@ -1,16 +1,20 @@
 services:
   - type: web
     name: badier-ride-backend
+    env: java
+    plan: free
     buildCommand: ./mvnw clean install
     startCommand: java -jar target/badier-ride-0.0.1-SNAPSHOT.jar
     envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://<TON_HOST_MYSQL>:3306/badier_ride?useSSL=false&serverTimezone=UTC
+        value: jdbc:postgresql://badier_ride_db_user:wS2EiwS2mLCTZlKhaDJtwm3wLccxVZHR@dpg-d19b1mbuibrs73c26m1g-a/badier_ride_db
       - key: SPRING_DATASOURCE_USERNAME
-        value: <TON_UTILISATEUR_RENDER>
+        value: badier_ride_db_user
       - key: SPRING_DATASOURCE_PASSWORD
-        value: <TON_MOT_DE_PASSE_RENDER>
+        value: wS2EiwS2mLCTZlKhaDJtwm3wLccxVZHR
       - key: JWT_SECRET
         value: fcwzgf89pZlOuhZ8sKDejXIM5Bq02IsQUX+WWheNmz8=
       - key: MAPS_API_KEY
-        value: <TA_CLE_GOOGLE_MAPS>
+        value: AIzaSyBafTaXaUdnQbnRNysnBfG7H8Vql5VzOOI
