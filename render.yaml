@@ -9,7 +9,7 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://badier_ride_db_user:wS2EiwS2mLCTZlKhaDJtwm3wLccxVZHR@dpg-d19b1mbuibrs73c26m1g-a.oregon-postgres.render.com/badier_ride_db
+        value: jdbc:postgresql://badier_ride_db_user:wS2EiwS2mLCTZlKhaDJtwm3wLccxVZHR@dpg-d19b1mbuibrs73c26m1g-a/badier_ride_db
       - key: SPRING_DATASOURCE_USERNAME
         value: badier_ride_db_user
       - key: SPRING_DATASOURCE_PASSWORD
