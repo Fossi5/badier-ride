@@ -310,11 +310,18 @@ public class RouteService {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(deliveryPointId)
                 .orElseThrow(() -> new RuntimeException("Delivery point not found with ID: " + deliveryPointId));
 
-        boolean alreadyAssigned = routeDeliveryPointRepository
-                .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
-                .isPresent();
+        List<RouteDeliveryPoint> existingRelations = routeDeliveryPointRepository
+                .findAllByRouteIdAndDeliveryPointIdOrderBySequenceOrderAsc(routeId, deliveryPointId);
 
-        if (!alreadyAssigned) {
+        if (!existingRelations.isEmpty()) {
+            if (existingRelations.size() > 1) {
+                log.warn(
+                        "{} doublons détectés lors de l'association du point {} à la tournée {}. Suppression des entrées excédentaires.",
+                        existingRelations.size() - 1, deliveryPointId, routeId);
+                routeDeliveryPointRepository.deleteAll(existingRelations.subList(1, existingRelations.size()));
+            }
+            log.info("Le point de livraison {} est déjà assigné à la tournée {}", deliveryPointId, routeId);
+        } else {
             int nextOrder = routeDeliveryPointRepository.findByRouteIdOrderBySequenceOrderAsc(routeId).size();
             RouteDeliveryPoint newRelation = buildRouteDeliveryPoint(route, deliveryPoint, nextOrder);
             routeDeliveryPointRepository.save(newRelation);

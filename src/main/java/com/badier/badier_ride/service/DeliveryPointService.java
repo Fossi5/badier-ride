@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
 import com.badier.badier_ride.dto.DeliveryPointRequest;
@@ -25,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class DeliveryPointService {
+
+    private static final Logger log = LoggerFactory.getLogger(DeliveryPointService.class);
 
     private final DeliveryPointRepository deliveryPointRepository;
     private final AddressRepository addressRepository;
@@ -136,11 +141,7 @@ public class DeliveryPointService {
     @Transactional
     public DeliveryPointResponse updateStatusInRoute(Long routeId, Long deliveryPointId, DeliveryStatus status) {
         // Récupérer le RouteDeliveryPoint (relation entre route et delivery point)
-        RouteDeliveryPoint rdp = routeDeliveryPointRepository
-                .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
-                .orElseThrow(() -> new RuntimeException(
-                        String.format("Point de livraison %d non trouvé dans la tournée %d", deliveryPointId,
-                                routeId)));
+        RouteDeliveryPoint rdp = resolveRouteDeliveryPoint(routeId, deliveryPointId);
 
         // Mettre à jour le statut dans la relation (pas dans le DeliveryPoint global)
         rdp.setStatus(status);
@@ -154,6 +155,25 @@ public class DeliveryPointService {
 
         // Retourner la réponse basée sur le DeliveryPoint
         return mapToResponse(updatedRdp.getDeliveryPoint());
+    }
+
+    private RouteDeliveryPoint resolveRouteDeliveryPoint(Long routeId, Long deliveryPointId) {
+        List<RouteDeliveryPoint> matches = routeDeliveryPointRepository
+                .findAllByRouteIdAndDeliveryPointIdOrderBySequenceOrderAsc(routeId, deliveryPointId);
+
+        if (matches.isEmpty()) {
+            throw new RuntimeException(
+                    String.format("Point de livraison %d non trouvé dans la tournée %d", deliveryPointId, routeId));
+        }
+
+        if (matches.size() > 1) {
+            log.warn(
+                    "{} doublons détectés pour la tournée {} et le point {}. Nettoyage automatique des entrées en trop.",
+                    matches.size() - 1, routeId, deliveryPointId);
+            routeDeliveryPointRepository.deleteAll(matches.subList(1, matches.size()));
+        }
+
+        return matches.get(0);
     }
 
     @Transactional
