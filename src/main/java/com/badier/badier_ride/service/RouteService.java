@@ -3,7 +3,11 @@ package com.badier.badier_ride.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -14,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.badier.badier_ride.dto.DeliveryPointOrderDto;
 import com.badier.badier_ride.dto.RouteRequest;
 import com.badier.badier_ride.dto.RouteResponse;
+import com.badier.badier_ride.dto.DeliveryPointResponse;
 import com.badier.badier_ride.dto.UserSummaryResponse;
 import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.entity.Route;
@@ -313,18 +318,85 @@ public class RouteService {
     }
 
     public RouteResponse mapToResponse(Route route) {
+        List<RouteDeliveryPoint> routeDeliveryPoints = routeDeliveryPointRepository
+                .findByRouteIdOrderBySequenceOrderAsc(route.getId());
+
+        List<DeliveryPointResponse> deliveryPointResponses;
+
+        if (!routeDeliveryPoints.isEmpty()) {
+            Map<Long, RouteDeliveryPoint> uniquePoints = new LinkedHashMap<>();
+
+            for (RouteDeliveryPoint routeDeliveryPoint : routeDeliveryPoints) {
+                if (routeDeliveryPoint.getDeliveryPoint() == null) {
+                    continue;
+                }
+
+                Long deliveryPointId = routeDeliveryPoint.getDeliveryPoint().getId();
+                RouteDeliveryPoint existing = uniquePoints.get(deliveryPointId);
+
+                if (existing == null) {
+                    uniquePoints.put(deliveryPointId, routeDeliveryPoint);
+                    continue;
+                }
+
+                boolean existingHasOrder = existing.getSequenceOrder() != null;
+                boolean candidateHasOrder = routeDeliveryPoint.getSequenceOrder() != null;
+
+                if (!existingHasOrder && candidateHasOrder) {
+                    log.warn("Duplicate delivery point {} detected on route {}. Prioritizing the ordered instance.",
+                            deliveryPointId, route.getId());
+                    uniquePoints.put(deliveryPointId, routeDeliveryPoint);
+                }
+            }
+
+            deliveryPointResponses = uniquePoints.values().stream()
+                    .sorted(Comparator.comparing(rdp -> Optional.ofNullable(rdp.getSequenceOrder())
+                            .orElse(Integer.MAX_VALUE)))
+                    .map(this::mapRouteDeliveryPointToResponse)
+                    .collect(Collectors.toList());
+        } else if (route.getDeliveryPoints() != null) {
+            deliveryPointResponses = route.getDeliveryPoints().stream()
+                    .map(deliveryPointService::mapToResponse)
+                    .collect(Collectors.toList());
+        } else {
+            deliveryPointResponses = new ArrayList<>();
+        }
+
         return RouteResponse.builder()
                 .id(route.getId())
                 .name(route.getName())
                 .driver(mapUserToSummary(route.getDriver()))
                 .dispatcher(mapUserToSummary(route.getDispatcher()))
-                .deliveryPoints(route.getDeliveryPoints().stream()
-                        .map(deliveryPointService::mapToResponse)
-                        .collect(Collectors.toList()))
+                .deliveryPoints(deliveryPointResponses)
                 .status(route.getStatus())
                 .startTime(route.getStartTime())
                 .endTime(route.getEndTime())
+                .notes(route.getNotes())
                 .build();
+    }
+
+    private DeliveryPointResponse mapRouteDeliveryPointToResponse(RouteDeliveryPoint routeDeliveryPoint) {
+        DeliveryPointResponse response = deliveryPointService.mapToResponse(routeDeliveryPoint.getDeliveryPoint());
+
+        if (routeDeliveryPoint.getStatus() != null) {
+            response.setDeliveryStatus(routeDeliveryPoint.getStatus().name());
+        }
+
+        response.setSequenceOrder(routeDeliveryPoint.getSequenceOrder());
+        response.setIsStartPoint(Boolean.TRUE.equals(routeDeliveryPoint.getIsStartPoint()));
+        response.setIsEndPoint(Boolean.TRUE.equals(routeDeliveryPoint.getIsEndPoint()));
+
+        if (routeDeliveryPoint.getPlannedTime() != null) {
+            response.setPlannedTime(routeDeliveryPoint.getPlannedTime());
+            response.setDeliveryTime(routeDeliveryPoint.getPlannedTime().toString());
+            response.setDeliveryDate(routeDeliveryPoint.getPlannedTime().toString());
+        }
+
+        if (routeDeliveryPoint.getActualTime() != null) {
+            response.setActualTime(routeDeliveryPoint.getActualTime());
+        }
+
+        return response;
     }
 
     private UserSummaryResponse mapUserToSummary(User user) {

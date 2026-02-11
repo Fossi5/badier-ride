@@ -180,6 +180,9 @@ public class DeliveryPointService {
                 .deliveryStatus(deliveryPoint.getStatus().toString())
                 .plannedTime(deliveryPoint.getPlannedTime())
                 .actualTime(deliveryPoint.getActualTime())
+                .sequenceOrder(null)
+                .isStartPoint(Boolean.FALSE)
+                .isEndPoint(Boolean.FALSE)
                 .build();
     }
 

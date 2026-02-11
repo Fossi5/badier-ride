@@ -2,7 +2,6 @@ package com.badier.badier_ride.dto;
 
 import java.time.LocalDateTime;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +24,9 @@ public class DeliveryPointResponse {
     private String deliveryStatus;
     private LocalDateTime plannedTime;
     private LocalDateTime actualTime;
-    
+    private Integer sequenceOrder;
+    private Boolean isStartPoint;
+    private Boolean isEndPoint;
+
     // Getters et Setters
 }
