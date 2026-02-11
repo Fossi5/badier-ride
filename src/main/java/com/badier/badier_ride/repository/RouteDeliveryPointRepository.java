@@ -17,4 +17,6 @@ public interface RouteDeliveryPointRepository extends JpaRepository<RouteDeliver
 
     // Récupérer un point de livraison spécifique dans une tournée
     Optional<RouteDeliveryPoint> findByRouteIdAndDeliveryPointId(Long routeId, Long deliveryPointId);
+
+    void deleteByRouteIdAndDeliveryPointId(Long routeId, Long deliveryPointId);
 }

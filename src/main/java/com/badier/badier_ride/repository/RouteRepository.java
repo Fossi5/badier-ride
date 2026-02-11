@@ -12,8 +12,10 @@ import com.badier.badier_ride.enumeration.RouteStatus;
 @Repository
 public interface RouteRepository extends JpaRepository<Route, Long> {
     List<Route> findByStatus(RouteStatus status);
+
     List<Route> findByDriverId(Long driverId);
+
     List<Route> findByDispatcherId(Long dispatcherId);
+
     List<Route> findByStartTimeBetween(LocalDateTime start, LocalDateTime end);
-    List<Route> findByDeliveryPointsId(Long deliveryPointId);
 }

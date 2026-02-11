@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.entity.Route;
 import com.badier.badier_ride.entity.RouteDeliveryPoint;
 import com.badier.badier_ride.entity.User;
+import com.badier.badier_ride.enumeration.DeliveryStatus;
 import com.badier.badier_ride.enumeration.RouteStatus;
 import com.badier.badier_ride.repository.DeliveryPointRepository;
 import com.badier.badier_ride.repository.RouteDeliveryPointRepository;
@@ -68,7 +70,6 @@ public class RouteService {
                 .name(request.getName())
                 .driver(driver)
                 .dispatcher(dispatcher)
-                .deliveryPoints(deliveryPoints)
                 .status(RouteStatus.valueOf(request.getStatus()))
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
@@ -157,7 +158,7 @@ public class RouteService {
             if (deliveryPoints.size() != request.getDeliveryPointIds().size()) {
                 throw new RuntimeException("Some delivery points were not found");
             }
-            route.setDeliveryPoints(deliveryPoints);
+            rebuildRouteDeliveryPoints(route, deliveryPoints);
         }
 
         if (request.getName() != null)
@@ -183,6 +184,16 @@ public class RouteService {
         Route route = routeRepository.findById(routeId)
                 .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
 
+        List<RouteDeliveryPoint> currentRelations = routeDeliveryPointRepository
+                .findByRouteIdOrderBySequenceOrderAsc(routeId);
+
+        Map<Long, RouteDeliveryPoint> existingRelations = currentRelations.stream()
+                .collect(Collectors.toMap(
+                        rdp -> rdp.getDeliveryPoint().getId(),
+                        Function.identity(),
+                        (existing, replacement) -> existing,
+                        LinkedHashMap::new));
+
         // Vider les relations existantes
         routeDeliveryPointRepository.deleteByRouteId(routeId);
 
@@ -194,11 +205,13 @@ public class RouteService {
                     .orElseThrow(
                             () -> new RuntimeException("Point de livraison non trouvé avec ID: " + pointOrder.getId()));
 
-            // Vérifier que le point appartient à la tournée
-            if (!route.getDeliveryPoints().contains(deliveryPoint)) {
+            // Vérifier que le point appartenait bien à la tournée avant ré-ordonnancement
+            if (!existingRelations.containsKey(deliveryPoint.getId())) {
                 throw new RuntimeException(
                         "Le point " + pointOrder.getId() + " n'appartient pas à la tournée " + routeId);
             }
+
+            RouteDeliveryPoint previous = existingRelations.get(deliveryPoint.getId());
 
             RouteDeliveryPoint rdp = RouteDeliveryPoint.builder()
                     .route(route)
@@ -206,6 +219,9 @@ public class RouteService {
                     .sequenceOrder(pointOrder.getSequenceOrder())
                     .isStartPoint(pointOrder.getIsStartPoint())
                     .isEndPoint(pointOrder.getIsEndPoint())
+                    .status(previous != null ? previous.getStatus() : DeliveryStatus.PENDING)
+                    .plannedTime(previous != null ? previous.getPlannedTime() : deliveryPoint.getPlannedTime())
+                    .actualTime(previous != null ? previous.getActualTime() : null)
                     .build();
 
             newRelations.add(rdp);
@@ -281,6 +297,7 @@ public class RouteService {
 
     @Transactional
     public void deleteRoute(Long id) {
+        routeDeliveryPointRepository.deleteByRouteId(id);
         routeRepository.deleteById(id);
         log.info("Route deleted successfully with ID: {}", id);
     }
@@ -293,13 +310,20 @@ public class RouteService {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(deliveryPointId)
                 .orElseThrow(() -> new RuntimeException("Delivery point not found with ID: " + deliveryPointId));
 
-        if (!route.getDeliveryPoints().contains(deliveryPoint)) {
-            route.getDeliveryPoints().add(deliveryPoint);
-            routeRepository.save(route);
+        boolean alreadyAssigned = routeDeliveryPointRepository
+                .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
+                .isPresent();
+
+        if (!alreadyAssigned) {
+            int nextOrder = routeDeliveryPointRepository.findByRouteIdOrderBySequenceOrderAsc(routeId).size();
+            RouteDeliveryPoint newRelation = buildRouteDeliveryPoint(route, deliveryPoint, nextOrder);
+            routeDeliveryPointRepository.save(newRelation);
         }
 
         log.info("Delivery point added to route with ID: {}", routeId);
-        return mapToResponse(route);
+        Route refreshedRoute = routeRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+        return mapToResponse(refreshedRoute);
     }
 
     @Transactional
@@ -310,11 +334,38 @@ public class RouteService {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(deliveryPointId)
                 .orElseThrow(() -> new RuntimeException("Delivery point not found with ID: " + deliveryPointId));
 
-        route.getDeliveryPoints().remove(deliveryPoint);
-        routeRepository.save(route);
+        routeDeliveryPointRepository.deleteByRouteIdAndDeliveryPointId(routeId, deliveryPointId);
 
         log.info("Delivery point removed from route with ID: {}", routeId);
-        return mapToResponse(route);
+        Route refreshedRoute = routeRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+        return mapToResponse(refreshedRoute);
+    }
+
+    private void rebuildRouteDeliveryPoints(Route route, List<DeliveryPoint> deliveryPoints) {
+        routeDeliveryPointRepository.deleteByRouteId(route.getId());
+
+        if (deliveryPoints == null || deliveryPoints.isEmpty()) {
+            return;
+        }
+
+        int sequenceOrder = 0;
+        for (DeliveryPoint point : deliveryPoints) {
+            RouteDeliveryPoint rdp = buildRouteDeliveryPoint(route, point, sequenceOrder++);
+            routeDeliveryPointRepository.save(rdp);
+        }
+    }
+
+    private RouteDeliveryPoint buildRouteDeliveryPoint(Route route, DeliveryPoint deliveryPoint, int sequenceOrder) {
+        return RouteDeliveryPoint.builder()
+                .route(route)
+                .deliveryPoint(deliveryPoint)
+                .sequenceOrder(sequenceOrder)
+                .status(DeliveryStatus.PENDING)
+                .isStartPoint(false)
+                .isEndPoint(false)
+                .plannedTime(deliveryPoint.getPlannedTime())
+                .build();
     }
 
     public RouteResponse mapToResponse(Route route) {
@@ -353,10 +404,6 @@ public class RouteService {
                     .sorted(Comparator.comparing(rdp -> Optional.ofNullable(rdp.getSequenceOrder())
                             .orElse(Integer.MAX_VALUE)))
                     .map(this::mapRouteDeliveryPointToResponse)
-                    .collect(Collectors.toList());
-        } else if (route.getDeliveryPoints() != null) {
-            deliveryPointResponses = route.getDeliveryPoints().stream()
-                    .map(deliveryPointService::mapToResponse)
                     .collect(Collectors.toList());
         } else {
             deliveryPointResponses = new ArrayList<>();

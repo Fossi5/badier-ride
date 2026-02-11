@@ -9,7 +9,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.badier.badier_ride.entity.DeliveryPoint;
+import com.badier.badier_ride.enumeration.DeliveryStatus;
 import com.badier.badier_ride.enumeration.RouteStatus;
 
 @Builder
@@ -33,18 +36,9 @@ public class Route {
     @JoinColumn(name = "dispatcher_id")
     private User dispatcher;
 
-    // Relation ManyToMany remplacée par OneToMany vers la table d'association
+    // Relation OneToMany vers la table d'association enrichie
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RouteDeliveryPoint> routeDeliveryPoints = new ArrayList<>();
-
-    // Maintien de la relation d'origine pour compatibilité avec le code existant
-    @ManyToMany
-    @JoinTable(
-        name = "route_delivery_points",
-        joinColumns = @JoinColumn(name = "route_id"),
-        inverseJoinColumns = @JoinColumn(name = "delivery_point_id")
-    )
-    private List<DeliveryPoint> deliveryPoints;
 
     @Enumerated(EnumType.STRING)
     private RouteStatus status;
@@ -56,8 +50,19 @@ public class Route {
     private LocalDateTime endTime;
 
     private String notes;
-    
-    // Méthode utilitaire pour ajouter un point de livraison avec un ordre spécifique
+
+    /**
+     * Retourne une vue immuable des points de livraison assignés à cette tournée.
+     * Cette méthode remplace l'ancien accès direct via la relation ManyToMany.
+     */
+    public List<DeliveryPoint> getDeliveryPointsSnapshot() {
+        return routeDeliveryPoints.stream()
+                .map(RouteDeliveryPoint::getDeliveryPoint)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    // Méthode utilitaire pour ajouter un point de livraison avec un ordre
+    // spécifique
     public void addDeliveryPoint(DeliveryPoint deliveryPoint, Integer order, Boolean isStart, Boolean isEnd) {
         RouteDeliveryPoint rdp = new RouteDeliveryPoint();
         rdp.setRoute(this);
@@ -65,21 +70,14 @@ public class Route {
         rdp.setSequenceOrder(order);
         rdp.setIsStartPoint(isStart);
         rdp.setIsEndPoint(isEnd);
-        
+        rdp.setStatus(DeliveryStatus.PENDING);
+        rdp.setPlannedTime(deliveryPoint.getPlannedTime());
+
         this.routeDeliveryPoints.add(rdp);
-        
-        // Maintenir la liste deliveryPoints synchronisée
-        if (this.deliveryPoints == null) {
-            this.deliveryPoints = new ArrayList<>();
-        }
-        if (!this.deliveryPoints.contains(deliveryPoint)) {
-            this.deliveryPoints.add(deliveryPoint);
-        }
     }
-    
+
     // Méthode pour supprimer un point de livraison
     public void removeDeliveryPoint(DeliveryPoint deliveryPoint) {
         this.routeDeliveryPoints.removeIf(rdp -> rdp.getDeliveryPoint().equals(deliveryPoint));
-        this.deliveryPoints.remove(deliveryPoint);
     }
 }
