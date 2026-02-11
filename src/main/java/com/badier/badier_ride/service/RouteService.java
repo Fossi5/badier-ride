@@ -38,7 +38,6 @@ public class RouteService {
     private final DeliveryPointRepository deliveryPointRepository;
     private final DeliveryPointService deliveryPointService;
     private final RouteDeliveryPointRepository routeDeliveryPointRepository;
-    
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -72,6 +71,24 @@ public class RouteService {
                 .build();
 
         Route savedRoute = routeRepository.save(route);
+
+        // Créer les entrées RouteDeliveryPoint avec le statut initialisé à PENDING
+        if (!deliveryPoints.isEmpty()) {
+            int sequenceOrder = 0;
+            for (DeliveryPoint point : deliveryPoints) {
+                RouteDeliveryPoint rdp = RouteDeliveryPoint.builder()
+                        .route(savedRoute)
+                        .deliveryPoint(point)
+                        .sequenceOrder(sequenceOrder++)
+                        .status(com.badier.badier_ride.enumeration.DeliveryStatus.PENDING)
+                        .isStartPoint(false)
+                        .isEndPoint(false)
+                        .plannedTime(point.getPlannedTime())
+                        .build();
+                routeDeliveryPointRepository.save(rdp);
+            }
+        }
+
         log.info("Route created successfully with ID: {}", savedRoute.getId());
         return mapToResponse(savedRoute);
     }
@@ -125,7 +142,8 @@ public class RouteService {
 
         if (request.getDispatcherId() != null && !request.getDispatcherId().equals(route.getDispatcher().getId())) {
             User dispatcher = userRepository.findById(request.getDispatcherId())
-                    .orElseThrow(() -> new RuntimeException("Dispatcher not found with ID: " + request.getDispatcherId()));
+                    .orElseThrow(
+                            () -> new RuntimeException("Dispatcher not found with ID: " + request.getDispatcherId()));
             route.setDispatcher(dispatcher);
         }
 
@@ -137,11 +155,16 @@ public class RouteService {
             route.setDeliveryPoints(deliveryPoints);
         }
 
-        if (request.getName() != null) route.setName(request.getName());
-        if (request.getStatus() != null) route.setStatus(RouteStatus.valueOf(request.getStatus()));
-        if (request.getStartTime() != null) route.setStartTime(request.getStartTime());
-        if (request.getEndTime() != null) route.setEndTime(request.getEndTime());
-        if (request.getNotes() != null) route.setNotes(request.getNotes());
+        if (request.getName() != null)
+            route.setName(request.getName());
+        if (request.getStatus() != null)
+            route.setStatus(RouteStatus.valueOf(request.getStatus()));
+        if (request.getStartTime() != null)
+            route.setStartTime(request.getStartTime());
+        if (request.getEndTime() != null)
+            route.setEndTime(request.getEndTime());
+        if (request.getNotes() != null)
+            route.setNotes(request.getNotes());
 
         Route updatedRoute = routeRepository.save(route);
         log.info("Route updated successfully with ID: {}", updatedRoute.getId());
@@ -149,49 +172,50 @@ public class RouteService {
     }
 
     @Transactional
-public RouteResponse updateRoutePointsOrder(Long routeId, List<DeliveryPointOrderDto> orderedPoints) {
-    log.info("Mise à jour de l'ordre des points pour la tournée {}", routeId);
-    
-    Route route = routeRepository.findById(routeId)
-            .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
-    
-    
+    public RouteResponse updateRoutePointsOrder(Long routeId, List<DeliveryPointOrderDto> orderedPoints) {
+        log.info("Mise à jour de l'ordre des points pour la tournée {}", routeId);
+
+        Route route = routeRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
+
         // Vider les relations existantes
         routeDeliveryPointRepository.deleteByRouteId(routeId);
-    
-    // Créer les nouvelles relations avec l'ordre spécifié
-    List<RouteDeliveryPoint> newRelations = new ArrayList<>();
-    
-    for (DeliveryPointOrderDto pointOrder : orderedPoints) {
-        DeliveryPoint deliveryPoint = deliveryPointRepository.findById(pointOrder.getId())
-                .orElseThrow(() -> new RuntimeException("Point de livraison non trouvé avec ID: " + pointOrder.getId()));
-        
-        // Vérifier que le point appartient à la tournée
-        if (!route.getDeliveryPoints().contains(deliveryPoint)) {
-            throw new RuntimeException("Le point " + pointOrder.getId() + " n'appartient pas à la tournée " + routeId);
+
+        // Créer les nouvelles relations avec l'ordre spécifié
+        List<RouteDeliveryPoint> newRelations = new ArrayList<>();
+
+        for (DeliveryPointOrderDto pointOrder : orderedPoints) {
+            DeliveryPoint deliveryPoint = deliveryPointRepository.findById(pointOrder.getId())
+                    .orElseThrow(
+                            () -> new RuntimeException("Point de livraison non trouvé avec ID: " + pointOrder.getId()));
+
+            // Vérifier que le point appartient à la tournée
+            if (!route.getDeliveryPoints().contains(deliveryPoint)) {
+                throw new RuntimeException(
+                        "Le point " + pointOrder.getId() + " n'appartient pas à la tournée " + routeId);
+            }
+
+            RouteDeliveryPoint rdp = RouteDeliveryPoint.builder()
+                    .route(route)
+                    .deliveryPoint(deliveryPoint)
+                    .sequenceOrder(pointOrder.getSequenceOrder())
+                    .isStartPoint(pointOrder.getIsStartPoint())
+                    .isEndPoint(pointOrder.getIsEndPoint())
+                    .build();
+
+            newRelations.add(rdp);
         }
-        
-        RouteDeliveryPoint rdp = RouteDeliveryPoint.builder()
-                .route(route)
-                .deliveryPoint(deliveryPoint)
-                .sequenceOrder(pointOrder.getSequenceOrder())
-                .isStartPoint(pointOrder.getIsStartPoint())
-                .isEndPoint(pointOrder.getIsEndPoint())
-                .build();
-        
-        newRelations.add(rdp);
+
+        // Sauvegarder les nouvelles relations
+        routeDeliveryPointRepository.saveAll(newRelations);
+
+        // Recharger la tournée pour obtenir les relations mises à jour
+        Route updatedRoute = routeRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
+
+        log.info("Ordre des points mis à jour avec succès pour la tournée {}", routeId);
+        return mapToResponse(updatedRoute);
     }
-    
-    // Sauvegarder les nouvelles relations
-    routeDeliveryPointRepository.saveAll(newRelations);
-    
-    // Recharger la tournée pour obtenir les relations mises à jour
-    Route updatedRoute = routeRepository.findById(routeId)
-            .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
-    
-    log.info("Ordre des points mis à jour avec succès pour la tournée {}", routeId);
-    return mapToResponse(updatedRoute);
-}
 
     @Transactional
     public RouteResponse updateRouteStatus(Long id, String status) {
@@ -199,6 +223,42 @@ public RouteResponse updateRoutePointsOrder(Long routeId, List<DeliveryPointOrde
                 .orElseThrow(() -> new RuntimeException("Route not found with ID: " + id));
 
         RouteStatus routeStatus = RouteStatus.valueOf(status);
+
+        // Validation critique : Empêcher la clôture de la tournée si tous les points ne
+        // sont pas traités
+        if (routeStatus == RouteStatus.COMPLETED) {
+            // Récupérer les RouteDeliveryPoint (avec le statut spécifique à cette tournée)
+            List<RouteDeliveryPoint> routeDeliveryPoints = routeDeliveryPointRepository
+                    .findByRouteIdOrderBySequenceOrderAsc(id);
+
+            // Filtrer les points non traités (ni COMPLETED ni FAILED)
+            List<RouteDeliveryPoint> untreatedPoints = routeDeliveryPoints.stream()
+                    .filter(rdp -> rdp.getStatus() != com.badier.badier_ride.enumeration.DeliveryStatus.COMPLETED
+                            && rdp.getStatus() != com.badier.badier_ride.enumeration.DeliveryStatus.FAILED)
+                    .collect(Collectors.toList());
+
+            if (!untreatedPoints.isEmpty()) {
+                String untreatedPointsInfo = untreatedPoints.stream()
+                        .map(rdp -> String.format("Point #%d (%s) - Statut: %s",
+                                rdp.getDeliveryPoint().getId(),
+                                rdp.getDeliveryPoint().getClientName(),
+                                rdp.getStatus()))
+                        .collect(Collectors.joining(", "));
+
+                log.warn("Tentative de clôture de la tournée {} avec {} points non traités: {}",
+                        id, untreatedPoints.size(), untreatedPointsInfo);
+
+                throw new IllegalStateException(
+                        String.format(
+                                "Impossible de terminer la tournée. %d point(s) de livraison n'ont pas été traité(s). "
+                                        +
+                                        "Vous devez marquer chaque point comme 'Livré' ou 'Échec' avant de terminer la tournée.",
+                                untreatedPoints.size()));
+            }
+            log.info("Tous les {} points de livraison ont été traités. Clôture de la tournée autorisée.",
+                    routeDeliveryPoints.size());
+        }
+
         route.setStatus(routeStatus);
 
         if (routeStatus == RouteStatus.IN_PROGRESS && route.getStartTime() == null) {
@@ -210,7 +270,7 @@ public RouteResponse updateRoutePointsOrder(Long routeId, List<DeliveryPointOrde
         }
 
         Route updatedRoute = routeRepository.save(route);
-        log.info("Route status updated successfully with ID: {}", updatedRoute.getId());
+        log.info("Route status updated successfully with ID: {} to status: {}", updatedRoute.getId(), routeStatus);
         return mapToResponse(updatedRoute);
     }
 
@@ -274,5 +334,5 @@ public RouteResponse updateRoutePointsOrder(Long routeId, List<DeliveryPointOrde
                 .email(user.getEmail())
                 .build();
     }
-   
+
 }

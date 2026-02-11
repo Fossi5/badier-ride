@@ -61,11 +61,32 @@ public class DeliveryPointController {
         return ResponseEntity.ok(deliveryPointService.updateDeliveryPoint(id, request));
     }
 
+    /**
+     * @deprecated Utiliser updateDeliveryPointStatusInRoute() à la place
+     *             Cet endpoint met à jour le statut global du point (pas
+     *             recommandé)
+     */
+    @Deprecated
     @PutMapping("/{id}/status")
     public ResponseEntity<DeliveryPointResponse> updateDeliveryPointStatus(
             @PathVariable Long id,
             @RequestParam String status) {
-        return ResponseEntity.ok(deliveryPointService.updateStatus(id, DeliveryStatus.valueOf(status)));
+        logger.warn(
+                "Utilisation de l'ancien endpoint updateDeliveryPointStatus (deprecated). Utiliser /routes/{routeId}/delivery-points/{id}/status à la place");
+        logger.info("Mise à jour du statut du point de livraison {} vers {}", id, status);
+        try {
+            DeliveryStatus deliveryStatus = DeliveryStatus.valueOf(status);
+            DeliveryPointResponse response = deliveryPointService.updateStatus(id, deliveryStatus);
+            logger.info("Statut mis à jour avec succès pour le point {}", id);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.error("Statut invalide: {}. Statuts valides: PENDING, IN_PROGRESS, COMPLETED, FAILED", status);
+            throw new RuntimeException(
+                    "Statut invalide: " + status + ". Statuts valides: PENDING, IN_PROGRESS, COMPLETED, FAILED");
+        } catch (Exception e) {
+            logger.error("Erreur lors de la mise à jour du statut pour le point {}: {}", id, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @DeleteMapping("/{id}")

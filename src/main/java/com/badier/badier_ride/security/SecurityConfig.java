@@ -76,7 +76,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/add/**").permitAll()
 
                         // Gestion des adresses
-                        
+
                         // Gestion des adresses
                         .requestMatchers(HttpMethod.GET, "/api/addresses/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/addresses/**").hasAnyRole("ADMIN", "DISPATCHER")
@@ -87,6 +87,9 @@ public class SecurityConfig {
                         // Gestion des points de livraison
                         .requestMatchers(HttpMethod.GET, "/api/delivery-points/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
+                        // Permettre aux chauffeurs de mettre à jour le statut uniquement
+                        .requestMatchers(HttpMethod.PUT, "/api/delivery-points/*/status")
+                        .hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.PUT, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
 
@@ -98,7 +101,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
 
                         // Endpoints d'administration
-                       // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Endpoints d'administration
                         .requestMatchers("/api/admin/drivers/available").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/dispatchers").hasAnyRole("ADMIN", "DISPATCHER")
