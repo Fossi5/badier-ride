@@ -5,6 +5,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,6 +83,11 @@ public class DeliveryPointService {
         return deliveryPointRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Page<DeliveryPointResponse> getAllDeliveryPointsPaged(int page, int size) {
+        return deliveryPointRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
+                .map(this::mapToResponse);
     }
 
     @Transactional

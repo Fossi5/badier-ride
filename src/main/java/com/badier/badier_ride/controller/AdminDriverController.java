@@ -3,6 +3,7 @@ package com.badier.badier_ride.controller;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +36,13 @@ public class AdminDriverController {
     @GetMapping
     public ResponseEntity<List<DriverResponse>> getAllDrivers() {
         return ResponseEntity.ok(adminDriverService.getAllDrivers());
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<DriverResponse>> getAllDriversPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(adminDriverService.getAllDriversPaged(page, size));
     }
 
     @PutMapping("/{id}")

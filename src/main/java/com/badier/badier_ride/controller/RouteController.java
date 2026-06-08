@@ -3,6 +3,7 @@ package com.badier.badier_ride.controller;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,14 @@ public class RouteController {
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<RouteResponse>> getAllRoutes() {
         return ResponseEntity.ok(routeService.getAllRoutes());
+    }
+
+    @GetMapping("/paged")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
+    public ResponseEntity<Page<RouteResponse>> getAllRoutesPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(routeService.getAllRoutesPaged(page, size));
     }
 
     @GetMapping("/driver")

@@ -3,6 +3,7 @@ package com.badier.badier_ride.controller;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,6 +37,14 @@ public class AdminDispatcherController {
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<DispatcherResponse>> getAllDispatchers() {
         return ResponseEntity.ok(adminDispatcherService.getAllDispatchers());
+    }
+
+    @GetMapping("/paged")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
+    public ResponseEntity<Page<DispatcherResponse>> getAllDispatchersPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(adminDispatcherService.getAllDispatchersPaged(page, size));
     }
 
     @PutMapping("/{id}")

@@ -2,6 +2,7 @@ package com.badier.badier_ride.controller;
 
 import java.util.List;
 import org.slf4j.Logger;
+import org.springframework.data.domain.Page;
 import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,13 @@ public class DeliveryPointController {
     @GetMapping
     public ResponseEntity<List<DeliveryPointResponse>> getAllDeliveryPoints() {
         return ResponseEntity.ok(deliveryPointService.getAllDeliveryPoints());
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<DeliveryPointResponse>> getAllDeliveryPointsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(deliveryPointService.getAllDeliveryPointsPaged(page, size));
     }
 
     @GetMapping("/{id}")

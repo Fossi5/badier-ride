@@ -3,6 +3,9 @@ package com.badier.badier_ride.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +53,11 @@ public class AddressService {
         return addressRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Page<AddressResponse> getAllAddressesPaged(int page, int size) {
+        return addressRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
+                .map(this::mapToResponse);
     }
 
     @Transactional

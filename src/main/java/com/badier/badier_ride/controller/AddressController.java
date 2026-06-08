@@ -3,6 +3,7 @@ package com.badier.badier_ride.controller;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +25,13 @@ public class AddressController {
     @GetMapping
     public ResponseEntity<List<AddressResponse>> getAllAddresses() {
         return ResponseEntity.ok(addressService.getAllAddresses());
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<AddressResponse>> getAllAddressesPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(addressService.getAllAddressesPaged(page, size));
     }
 
     @GetMapping("/{id}")
