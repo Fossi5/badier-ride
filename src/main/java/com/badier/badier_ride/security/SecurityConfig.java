@@ -77,7 +77,7 @@ public class SecurityConfig {
                         // Gestion des routes (tournées)
                         .requestMatchers(HttpMethod.GET, "/api/routes/driver").hasRole("DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/routes/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/routes/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
 

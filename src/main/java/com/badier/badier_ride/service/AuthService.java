@@ -31,11 +31,13 @@ public class AuthService {
             throw new AppException("Username already exists", HttpStatus.BAD_REQUEST);
         }
 
+        // Le rôle est toujours DRIVER par défaut pour les inscriptions publiques.
+        // La promotion vers ADMIN/DISPATCHER se fait uniquement via les endpoints /api/admin/**
         var user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(com.badier.badier_ride.enumeration.UserRole.DRIVER)
                 .build();
 
         userRepository.save(user);
