@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import java.security.Key;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,8 +28,12 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
-        //this.key = Keys.hmacShaKeyFor(secret.getBytes());
-        byte[] keyBytes = Base64.getDecoder().decode(secret);
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(secret);
+        } catch (IllegalArgumentException ex) {
+            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        }
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
