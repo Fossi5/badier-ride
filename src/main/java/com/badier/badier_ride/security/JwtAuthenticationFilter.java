@@ -2,6 +2,7 @@ package com.badier.badier_ride.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,21 +33,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return isAuthEndpoint;
     }
 
+    /**
+     * Extrait le token JWT depuis le cookie httpOnly en priorité,
+     * avec fallback sur le header Authorization (compatibilité Postman / clients API).
+     */
+    private String extractToken(HttpServletRequest request) {
+        // 1. Priorité : cookie httpOnly "jwt"
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    logger.debug("JWT token found in cookie");
+                    return cookie.getValue();
+                }
+            }
+        }
+        // 2. Fallback : header Authorization: Bearer <token>
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            logger.debug("JWT token found in Authorization header (fallback)");
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
 
-        final String authHeader = request.getHeader("Authorization");
-        logger.debug("Authorization header: {}", authHeader != null ? "present" : "absent");
+        final String jwt = extractToken(request);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (jwt == null) {
             logger.info("No JWT token found in request, proceeding with filter chain");
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String jwt = authHeader.substring(7);
         try {
             logger.debug("Extracting username from JWT");
             final String username = jwtUtil.extractUsername(jwt);
@@ -73,7 +95,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             logger.error("Error processing JWT token: {}", e.getMessage(), e);
             logger.error("Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
-            logger.debug("JWT token found in request");
         }
 
         logger.debug("Continuing filter chain");

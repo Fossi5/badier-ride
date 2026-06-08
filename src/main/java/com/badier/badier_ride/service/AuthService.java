@@ -44,6 +44,7 @@ public class AuthService {
 
         return AuthResponse.builder()
                 .token(jwt)
+                .username(user.getUsername())
                 .role(user.getRole().name())
                 .build();
     }
@@ -64,9 +65,10 @@ public class AuthService {
                 .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
     
         var jwt = jwtUtil.generateToken(user);
-        
+
         return AuthResponse.builder()
                 .token(jwt)
+                .username(user.getUsername())
                 .role(user.getRole().name())
                 .build();
     }
