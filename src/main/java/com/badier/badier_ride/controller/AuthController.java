@@ -6,6 +6,7 @@ import com.badier.badier_ride.dto.RegisterRequest;
 import com.badier.badier_ride.exception.AppException;
 import com.badier.badier_ride.service.AuthService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.HashMap;
@@ -22,7 +23,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             AuthResponse response = authService.register(request);
             return ResponseEntity.ok(response);
@@ -33,7 +34,7 @@ public class AuthController {
         }
     }
     @PostMapping("/authenticate")
-    public ResponseEntity<?> authenticate(@RequestBody AuthRequest request) {
+    public ResponseEntity<?> authenticate(@Valid @RequestBody AuthRequest request) {
         try {
             AuthResponse response = authService.authenticate(request);
             return ResponseEntity.ok(response);

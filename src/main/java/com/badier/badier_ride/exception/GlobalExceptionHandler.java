@@ -1,13 +1,18 @@
 package com.badier.badier_ride.exception;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -26,6 +31,75 @@ public class GlobalExceptionHandler {
         response.put("timestamp", java.time.LocalDateTime.now().toString());
 
         return ResponseEntity.status(ex.getStatus()).body(response);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.error("ResourceNotFoundException: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("status", HttpStatus.NOT_FOUND.value());
+        response.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(InvalidOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidOperationException(InvalidOperationException ex) {
+        log.error("InvalidOperationException: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(UnauthorizedOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedOperationException(UnauthorizedOperationException ex) {
+        log.error("UnauthorizedOperationException: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("status", HttpStatus.FORBIDDEN.value());
+        response.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        log.error("Validation error: {}", ex.getMessage());
+
+        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map((FieldError fieldError) -> {
+                    Map<String, String> errorDetail = new HashMap<>();
+                    errorDetail.put("field", fieldError.getField());
+                    errorDetail.put("message", fieldError.getDefaultMessage());
+                    return errorDetail;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("errors", errors);
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        log.error("DataIntegrityViolationException: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "Conflit de données : une ressource avec ces informations existe déjà");
+        response.put("status", HttpStatus.CONFLICT.value());
+        response.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     @ExceptionHandler(IllegalStateException.class)

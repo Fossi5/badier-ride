@@ -2,6 +2,7 @@ package com.badier.badier_ride.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -76,16 +77,16 @@ public class RouteController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
-    public ResponseEntity<RouteResponse> createRoute(@RequestBody RouteRequest request) {
+    public ResponseEntity<RouteResponse> createRoute(@Valid @RequestBody RouteRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("Authenticated user: " + auth.getName());
-        System.out.println("Roles: " + auth.getAuthorities());
+        log.debug("Authenticated user: {}", auth.getName());
+        log.debug("Roles: {}", auth.getAuthorities());
         return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
-    public ResponseEntity<RouteResponse> updateRoute(@PathVariable Long id, @RequestBody RouteRequest request) {
+    public ResponseEntity<RouteResponse> updateRoute(@PathVariable Long id, @Valid @RequestBody RouteRequest request) {
         return ResponseEntity.ok(routeService.updateRoute(id, request));
     }
 

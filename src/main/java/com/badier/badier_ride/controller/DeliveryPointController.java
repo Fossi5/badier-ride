@@ -3,6 +3,7 @@ package com.badier.badier_ride.controller;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +41,7 @@ public class DeliveryPointController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
-    public ResponseEntity<DeliveryPointResponse> createDeliveryPoint(@RequestBody DeliveryPointRequest request) {
+    public ResponseEntity<DeliveryPointResponse> createDeliveryPoint(@Valid @RequestBody DeliveryPointRequest request) {
         // Logs de débogage
         logger.info("Requête reçue pour createDeliveryPoint: {}", request);
         try {
@@ -57,7 +58,7 @@ public class DeliveryPointController {
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<DeliveryPointResponse> updateDeliveryPoint(
             @PathVariable Long id,
-            @RequestBody DeliveryPointRequest request) {
+            @Valid @RequestBody DeliveryPointRequest request) {
         return ResponseEntity.ok(deliveryPointService.updateDeliveryPoint(id, request));
     }
 

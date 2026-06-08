@@ -2,6 +2,7 @@ package com.badier.badier_ride.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +23,7 @@ public class AdminDispatcherController {
     private final AdminDispatcherService adminDispatcherService;
 
     @PostMapping
-    public ResponseEntity<DispatcherResponse> createDispatcher(@RequestBody DispatcherRequest request) {
+    public ResponseEntity<DispatcherResponse> createDispatcher(@Valid @RequestBody DispatcherRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminDispatcherService.createDispatcher(request));
     }
 
@@ -39,7 +40,7 @@ public class AdminDispatcherController {
 
     @PutMapping("/{id}")
     public ResponseEntity<DispatcherResponse> updateDispatcher(@PathVariable Long id,
-            @RequestBody DispatcherRequest request) {
+            @Valid @RequestBody DispatcherRequest request) {
         return ResponseEntity.ok(adminDispatcherService.updateDispatcher(id, request));
     }
 

@@ -15,6 +15,8 @@ import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
 import com.badier.badier_ride.dto.DeliveryPointRequest;
 import com.badier.badier_ride.dto.DeliveryPointResponse;
+import com.badier.badier_ride.exception.InvalidOperationException;
+import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.entity.Address;
 import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.entity.RouteDeliveryPoint;
@@ -46,13 +48,13 @@ public class DeliveryPointService {
             // Création d'une nouvelle adresse
             AddressResponse createdAddress = addressService.createAddress(request.getAddress());
             address = addressRepository.findById(createdAddress.getId())
-                    .orElseThrow(() -> new RuntimeException("Impossible de trouver l'adresse nouvellement créée"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Impossible de trouver l'adresse nouvellement créée"));
         } else if (request.getAddressId() != null) {
             // Utilisation d'une adresse existante
             address = addressRepository.findById(request.getAddressId())
-                    .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + request.getAddressId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + request.getAddressId()));
         } else {
-            throw new RuntimeException("Une adresse ou un ID d'adresse doit être fourni");
+            throw new InvalidOperationException("Une adresse ou un ID d'adresse doit être fourni");
         }
 
         DeliveryPoint deliveryPoint = DeliveryPoint.builder()
@@ -70,7 +72,7 @@ public class DeliveryPointService {
 
     public DeliveryPointResponse getDeliveryPointById(Long id) {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Point de livraison non trouvé avec ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + id));
         return mapToResponse(deliveryPoint);
     }
 
@@ -83,20 +85,20 @@ public class DeliveryPointService {
     @Transactional
     public DeliveryPointResponse updateDeliveryPoint(Long id, DeliveryPointRequest request) {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Point de livraison non trouvé avec ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + id));
 
         // Si une nouvelle adresse est fournie, on la crée
         if (request.getAddress() != null) {
             AddressResponse createdAddress = addressService.createAddress(request.getAddress());
             Address address = addressRepository.findById(createdAddress.getId())
-                    .orElseThrow(() -> new RuntimeException("Impossible de trouver l'adresse nouvellement créée"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Impossible de trouver l'adresse nouvellement créée"));
             deliveryPoint.setAddress(address);
         }
         // Sinon si un ID d'adresse est fourni et qu'il est différent de l'adresse
         // actuelle
         else if (request.getAddressId() != null && !request.getAddressId().equals(deliveryPoint.getAddress().getId())) {
             Address address = addressRepository.findById(request.getAddressId())
-                    .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + request.getAddressId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + request.getAddressId()));
             deliveryPoint.setAddress(address);
         }
 
@@ -118,7 +120,7 @@ public class DeliveryPointService {
     @Transactional
     public DeliveryPointResponse updateStatus(Long id, DeliveryStatus status) {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Point de livraison non trouvé avec ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + id));
 
         deliveryPoint.setStatus(status);
 
@@ -162,7 +164,7 @@ public class DeliveryPointService {
                 .findAllByRouteIdAndDeliveryPointIdOrderBySequenceOrderAsc(routeId, deliveryPointId);
 
         if (matches.isEmpty()) {
-            throw new RuntimeException(
+            throw new ResourceNotFoundException(
                     String.format("Point de livraison %d non trouvé dans la tournée %d", deliveryPointId, routeId));
         }
 
@@ -208,7 +210,7 @@ public class DeliveryPointService {
 
     public DeliveryPointResponse createDeliveryPointFromAddress(Long addressId, DeliveryPointRequest defaultValues) {
         Address address = addressRepository.findById(addressId)
-                .orElseThrow(() -> new RuntimeException("Address not found with ID: " + addressId));
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found with ID: " + addressId));
 
         DeliveryPoint deliveryPoint = DeliveryPoint.builder()
                 .address(address)

@@ -35,14 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        logger.info("Processing request: {} {}", request.getMethod(), request.getRequestURI());
-
-        // Log tous les headers
-        java.util.Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            logger.info("Header: {} = {}", headerName, request.getHeader(headerName));
-        }
+        logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
 
         final String authHeader = request.getHeader("Authorization");
         logger.debug("Authorization header: {}", authHeader != null ? "present" : "absent");
@@ -80,7 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             logger.error("Error processing JWT token: {}", e.getMessage(), e);
             logger.error("Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
-            logger.error("Token: {}", jwt);
+            logger.debug("JWT token found in request");
         }
 
         logger.debug("Continuing filter chain");

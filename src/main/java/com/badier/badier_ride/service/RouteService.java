@@ -27,6 +27,8 @@ import com.badier.badier_ride.entity.RouteDeliveryPoint;
 import com.badier.badier_ride.entity.User;
 import com.badier.badier_ride.enumeration.DeliveryStatus;
 import com.badier.badier_ride.enumeration.RouteStatus;
+import com.badier.badier_ride.exception.InvalidOperationException;
+import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.repository.DeliveryPointRepository;
 import com.badier.badier_ride.repository.RouteDeliveryPointRepository;
 import com.badier.badier_ride.repository.RouteRepository;
@@ -53,16 +55,16 @@ public class RouteService {
         log.info("Creating a new route: {}", request.getName());
 
         User driver = userRepository.findById(request.getDriverId())
-                .orElseThrow(() -> new RuntimeException("Driver not found with ID: " + request.getDriverId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + request.getDriverId()));
 
         User dispatcher = userRepository.findById(request.getDispatcherId())
-                .orElseThrow(() -> new RuntimeException("Dispatcher not found with ID: " + request.getDispatcherId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Dispatcher not found with ID: " + request.getDispatcherId()));
 
         List<DeliveryPoint> deliveryPoints = new ArrayList<>();
         if (request.getDeliveryPointIds() != null && !request.getDeliveryPointIds().isEmpty()) {
             deliveryPoints = deliveryPointRepository.findAllById(request.getDeliveryPointIds());
             if (deliveryPoints.size() != request.getDeliveryPointIds().size()) {
-                throw new RuntimeException("Some delivery points were not found");
+                throw new ResourceNotFoundException("Some delivery points were not found");
             }
         }
 
@@ -101,7 +103,7 @@ public class RouteService {
 
     public RouteResponse getRouteById(Long id) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
         return mapToResponse(route);
     }
 
@@ -125,7 +127,7 @@ public class RouteService {
 
     public List<RouteResponse> getRoutesByDriverUsername(String username) {
         User driver = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
         return getRoutesByDriver(driver.getId());
     }
 
@@ -138,11 +140,11 @@ public class RouteService {
     @Transactional
     public RouteResponse updateRoute(Long id, RouteRequest request) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
         if (request.getDriverId() != null && !request.getDriverId().equals(route.getDriver().getId())) {
             User driver = userRepository.findById(request.getDriverId())
-                    .orElseThrow(() -> new RuntimeException("Driver not found with ID: " + request.getDriverId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + request.getDriverId()));
             route.setDriver(driver);
         }
 
@@ -156,7 +158,7 @@ public class RouteService {
         if (request.getDeliveryPointIds() != null) {
             List<DeliveryPoint> deliveryPoints = deliveryPointRepository.findAllById(request.getDeliveryPointIds());
             if (deliveryPoints.size() != request.getDeliveryPointIds().size()) {
-                throw new RuntimeException("Some delivery points were not found");
+                throw new ResourceNotFoundException("Some delivery points were not found");
             }
             rebuildRouteDeliveryPoints(route, deliveryPoints);
         }
@@ -182,7 +184,7 @@ public class RouteService {
         log.info("Mise à jour de l'ordre des points pour la tournée {}", routeId);
 
         Route route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Tournée non trouvée avec ID: " + routeId));
 
         List<RouteDeliveryPoint> currentRelations = routeDeliveryPointRepository
                 .findByRouteIdOrderBySequenceOrderAsc(routeId);
@@ -203,11 +205,11 @@ public class RouteService {
         for (DeliveryPointOrderDto pointOrder : orderedPoints) {
             DeliveryPoint deliveryPoint = deliveryPointRepository.findById(pointOrder.getId())
                     .orElseThrow(
-                            () -> new RuntimeException("Point de livraison non trouvé avec ID: " + pointOrder.getId()));
+                            () -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + pointOrder.getId()));
 
             // Vérifier que le point appartenait bien à la tournée avant ré-ordonnancement
             if (!existingRelations.containsKey(deliveryPoint.getId())) {
-                throw new RuntimeException(
+                throw new InvalidOperationException(
                         "Le point " + pointOrder.getId() + " n'appartient pas à la tournée " + routeId);
             }
 
@@ -232,7 +234,7 @@ public class RouteService {
 
         // Recharger la tournée pour obtenir les relations mises à jour
         Route updatedRoute = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Tournée non trouvée avec ID: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Tournée non trouvée avec ID: " + routeId));
 
         log.info("Ordre des points mis à jour avec succès pour la tournée {}", routeId);
         return mapToResponse(updatedRoute);
@@ -241,7 +243,7 @@ public class RouteService {
     @Transactional
     public RouteResponse updateRouteStatus(Long id, String status) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
         RouteStatus routeStatus = RouteStatus.valueOf(status);
 
@@ -305,10 +307,10 @@ public class RouteService {
     @Transactional
     public RouteResponse addDeliveryPointToRoute(Long routeId, Long deliveryPointId) {
         Route route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + routeId));
 
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(deliveryPointId)
-                .orElseThrow(() -> new RuntimeException("Delivery point not found with ID: " + deliveryPointId));
+                .orElseThrow(() -> new ResourceNotFoundException("Delivery point not found with ID: " + deliveryPointId));
 
         List<RouteDeliveryPoint> existingRelations = routeDeliveryPointRepository
                 .findAllByRouteIdAndDeliveryPointIdOrderBySequenceOrderAsc(routeId, deliveryPointId);
@@ -329,23 +331,23 @@ public class RouteService {
 
         log.info("Delivery point added to route with ID: {}", routeId);
         Route refreshedRoute = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + routeId));
         return mapToResponse(refreshedRoute);
     }
 
     @Transactional
     public RouteResponse removeDeliveryPointFromRoute(Long routeId, Long deliveryPointId) {
         Route route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + routeId));
 
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(deliveryPointId)
-                .orElseThrow(() -> new RuntimeException("Delivery point not found with ID: " + deliveryPointId));
+                .orElseThrow(() -> new ResourceNotFoundException("Delivery point not found with ID: " + deliveryPointId));
 
         routeDeliveryPointRepository.deleteByRouteIdAndDeliveryPointId(routeId, deliveryPointId);
 
         log.info("Delivery point removed from route with ID: {}", routeId);
         Route refreshedRoute = routeRepository.findById(routeId)
-                .orElseThrow(() -> new RuntimeException("Route not found with ID: " + routeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + routeId));
         return mapToResponse(refreshedRoute);
     }
 

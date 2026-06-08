@@ -2,6 +2,7 @@ package com.badier.badier_ride.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +23,7 @@ public class AdminDriverController {
     private final AdminDriverService adminDriverService;
 
     @PostMapping
-    public ResponseEntity<DriverResponse> createDriver(@RequestBody DriverRequest request) {
+    public ResponseEntity<DriverResponse> createDriver(@Valid @RequestBody DriverRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminDriverService.createDriver(request));
     }
 
@@ -37,7 +38,7 @@ public class AdminDriverController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DriverResponse> updateDriver(@PathVariable Long id, @RequestBody DriverRequest request) {
+    public ResponseEntity<DriverResponse> updateDriver(@PathVariable Long id, @Valid @RequestBody DriverRequest request) {
         return ResponseEntity.ok(adminDriverService.updateDriver(id, request));
     }
 

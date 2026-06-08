@@ -1,5 +1,7 @@
 package com.badier.badier_ride.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -10,6 +12,8 @@ import com.badier.badier_ride.repository.UserRepository;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -30,7 +34,7 @@ public class DataInitializer implements CommandLineRunner {
                     .role(UserRole.ADMIN)
                     .build();
             userRepository.save(admin);
-            System.out.println("Admin user created");
+            logger.info("Admin user created");
         }
     }
 }

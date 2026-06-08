@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
 import com.badier.badier_ride.entity.Address;
+import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.repository.AddressRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class AddressService {
 
     public AddressResponse getAddressById(Long id) {
         Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + id));
         return mapToResponse(address);
     }
 
@@ -54,7 +55,7 @@ public class AddressService {
     @Transactional
     public AddressResponse updateAddress(Long id, AddressRequest request) {
         Address address = addressRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Adresse non trouvée avec ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + id));
 
         address.setStreet(request.getStreet());
         address.setCity(request.getCity());
