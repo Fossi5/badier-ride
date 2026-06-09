@@ -62,7 +62,6 @@ public class RouteController {
         RouteResponse route = routeService.getRouteById(id);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // Si c'est un driver, vérifier que la tournée lui est assignée
         if (auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DRIVER"))) {
             if (!route.getDriver().getUsername().equals(auth.getName())) {
                 throw new AccessDeniedException("Vous n'avez pas accès à cette tournée");
@@ -104,14 +103,12 @@ public class RouteController {
         RouteResponse route = routeService.getRouteById(id);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // Si c'est un driver, vérifier que la tournée lui est assignée
         if (auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_DRIVER"))) {
             if (!route.getDriver().getUsername().equals(auth.getName())) {
                 throw new AccessDeniedException("Vous n'avez pas accès à cette tournée");
             }
         }
 
-        // Le GlobalExceptionHandler gère automatiquement les IllegalStateException
         return ResponseEntity.ok(routeService.updateRouteStatus(id, status));
     }
 
@@ -145,12 +142,10 @@ public class RouteController {
             @PathVariable Long addressId,
             @RequestBody(required = false) DeliveryPointRequest deliveryPointRequest) {
 
-        // Créer un point de livraison avec cette adresse si nécessaire
         DeliveryPointResponse deliveryPoint = deliveryPointService.createDeliveryPointFromAddress(
                 addressId,
                 deliveryPointRequest != null ? deliveryPointRequest : new DeliveryPointRequest());
 
-        // Ajouter ce point de livraison à la route
         return ResponseEntity.ok(routeService.addDeliveryPointToRoute(routeId, deliveryPoint.getId()));
     }
 
@@ -163,12 +158,6 @@ public class RouteController {
         return ResponseEntity.ok(updatedRoute);
     }
 
-    /**
-     * Met à jour le statut d'un point de livraison dans le contexte d'une tournée
-     * spécifique.
-     * Nouveau endpoint recommandé pour éviter les conflits de statut entre
-     * tournées.
-     */
     @PutMapping("/{routeId}/delivery-points/{deliveryPointId}/status")
     public ResponseEntity<DeliveryPointResponse> updateDeliveryPointStatusInRoute(
             @PathVariable Long routeId,
@@ -176,23 +165,12 @@ public class RouteController {
             @RequestParam String status,
             Authentication authentication) {
 
-        log.info("Mise à jour du statut du point {} dans la tournée {} vers {} par {}",
-                deliveryPointId, routeId, status, authentication.getName());
-
         try {
             DeliveryStatus deliveryStatus = DeliveryStatus.valueOf(status);
-            DeliveryPointResponse response = deliveryPointService.updateStatusInRoute(routeId, deliveryPointId,
-                    deliveryStatus);
-            log.info("Statut mis à jour avec succès pour le point {} dans la tournée {}", deliveryPointId, routeId);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(deliveryPointService.updateStatusInRoute(routeId, deliveryPointId, deliveryStatus));
         } catch (IllegalArgumentException e) {
-            log.error("Statut invalide: {}. Statuts valides: PENDING, IN_PROGRESS, COMPLETED, FAILED", status);
             throw new RuntimeException(
                     "Statut invalide: " + status + ". Statuts valides: PENDING, IN_PROGRESS, COMPLETED, FAILED");
-        } catch (Exception e) {
-            log.error("Erreur lors de la mise à jour du statut pour le point {} dans la tournée {}: {}",
-                    deliveryPointId, routeId, e.getMessage(), e);
-            throw e;
         }
     }
 }

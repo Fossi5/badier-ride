@@ -83,7 +83,6 @@ public class RouteService {
 
         Route savedRoute = routeRepository.save(route);
 
-        // Créer les entrées RouteDeliveryPoint avec le statut initialisé à PENDING
         if (!deliveryPoints.isEmpty()) {
             int sequenceOrder = 0;
             for (DeliveryPoint point : deliveryPoints) {
@@ -204,10 +203,8 @@ public class RouteService {
                         (existing, replacement) -> existing,
                         LinkedHashMap::new));
 
-        // Vider les relations existantes
         routeDeliveryPointRepository.deleteByRouteId(routeId);
 
-        // Créer les nouvelles relations avec l'ordre spécifié
         List<RouteDeliveryPoint> newRelations = new ArrayList<>();
 
         for (DeliveryPointOrderDto pointOrder : orderedPoints) {
@@ -215,7 +212,6 @@ public class RouteService {
                     .orElseThrow(
                             () -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + pointOrder.getId()));
 
-            // Vérifier que le point appartenait bien à la tournée avant ré-ordonnancement
             if (!existingRelations.containsKey(deliveryPoint.getId())) {
                 throw new InvalidOperationException(
                         "Le point " + pointOrder.getId() + " n'appartient pas à la tournée " + routeId);
@@ -237,10 +233,8 @@ public class RouteService {
             newRelations.add(rdp);
         }
 
-        // Sauvegarder les nouvelles relations
         routeDeliveryPointRepository.saveAll(newRelations);
 
-        // Recharger la tournée pour obtenir les relations mises à jour
         Route updatedRoute = routeRepository.findById(routeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournée non trouvée avec ID: " + routeId));
 
@@ -255,14 +249,10 @@ public class RouteService {
 
         RouteStatus routeStatus = RouteStatus.valueOf(status);
 
-        // Validation critique : Empêcher la clôture de la tournée si tous les points ne
-        // sont pas traités
         if (routeStatus == RouteStatus.COMPLETED) {
-            // Récupérer les RouteDeliveryPoint (avec le statut spécifique à cette tournée)
             List<RouteDeliveryPoint> routeDeliveryPoints = routeDeliveryPointRepository
                     .findByRouteIdOrderBySequenceOrderAsc(id);
 
-            // Filtrer les points non traités (ni COMPLETED ni FAILED)
             List<RouteDeliveryPoint> untreatedPoints = routeDeliveryPoints.stream()
                     .filter(rdp -> rdp.getStatus() != com.badier.badier_ride.enumeration.DeliveryStatus.COMPLETED
                             && rdp.getStatus() != com.badier.badier_ride.enumeration.DeliveryStatus.FAILED)
@@ -440,27 +430,7 @@ public class RouteService {
     }
 
     private DeliveryPointResponse mapRouteDeliveryPointToResponse(RouteDeliveryPoint routeDeliveryPoint) {
-        DeliveryPointResponse response = deliveryPointService.mapToResponse(routeDeliveryPoint.getDeliveryPoint());
-
-        if (routeDeliveryPoint.getStatus() != null) {
-            response.setDeliveryStatus(routeDeliveryPoint.getStatus().name());
-        }
-
-        response.setSequenceOrder(routeDeliveryPoint.getSequenceOrder());
-        response.setIsStartPoint(Boolean.TRUE.equals(routeDeliveryPoint.getIsStartPoint()));
-        response.setIsEndPoint(Boolean.TRUE.equals(routeDeliveryPoint.getIsEndPoint()));
-
-        if (routeDeliveryPoint.getPlannedTime() != null) {
-            response.setPlannedTime(routeDeliveryPoint.getPlannedTime());
-            response.setDeliveryTime(routeDeliveryPoint.getPlannedTime().toString());
-            response.setDeliveryDate(routeDeliveryPoint.getPlannedTime().toString());
-        }
-
-        if (routeDeliveryPoint.getActualTime() != null) {
-            response.setActualTime(routeDeliveryPoint.getActualTime());
-        }
-
-        return response;
+        return deliveryPointService.mapToResponse(routeDeliveryPoint);
     }
 
     private UserSummaryResponse mapUserToSummary(User user) {

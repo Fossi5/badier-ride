@@ -27,6 +27,4 @@ public class DeliveryPointResponse {
     private Integer sequenceOrder;
     private Boolean isStartPoint;
     private Boolean isEndPoint;
-
-    // Getters et Setters
 }

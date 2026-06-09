@@ -44,16 +44,13 @@ public class DeliveryPointService {
 
     @Transactional
     public DeliveryPointResponse createDeliveryPoint(DeliveryPointRequest request) {
-        // Gestion de l'adresse - soit existante, soit nouvelle
         Address address;
 
         if (request.getAddress() != null) {
-            // Création d'une nouvelle adresse
             AddressResponse createdAddress = addressService.createAddress(request.getAddress());
             address = addressRepository.findById(createdAddress.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Impossible de trouver l'adresse nouvellement créée"));
         } else if (request.getAddressId() != null) {
-            // Utilisation d'une adresse existante
             address = addressRepository.findById(request.getAddressId())
                     .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + request.getAddressId()));
         } else {
@@ -95,16 +92,12 @@ public class DeliveryPointService {
         DeliveryPoint deliveryPoint = deliveryPointRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + id));
 
-        // Si une nouvelle adresse est fournie, on la crée
         if (request.getAddress() != null) {
             AddressResponse createdAddress = addressService.createAddress(request.getAddress());
             Address address = addressRepository.findById(createdAddress.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Impossible de trouver l'adresse nouvellement créée"));
             deliveryPoint.setAddress(address);
-        }
-        // Sinon si un ID d'adresse est fourni et qu'il est différent de l'adresse
-        // actuelle
-        else if (request.getAddressId() != null && !request.getAddressId().equals(deliveryPoint.getAddress().getId())) {
+        } else if (request.getAddressId() != null && !request.getAddressId().equals(deliveryPoint.getAddress().getId())) {
             Address address = addressRepository.findById(request.getAddressId())
                     .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + request.getAddressId()));
             deliveryPoint.setAddress(address);
@@ -120,51 +113,18 @@ public class DeliveryPointService {
         return mapToResponse(updatedDeliveryPoint);
     }
 
-    /**
-     * @deprecated Utiliser updateStatusInRoute() à la place pour un statut
-     *             spécifique à une tournée
-     */
-    @Deprecated
-    @Transactional
-    public DeliveryPointResponse updateStatus(Long id, DeliveryStatus status) {
-        DeliveryPoint deliveryPoint = deliveryPointRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + id));
-
-        deliveryPoint.setStatus(status);
-
-        // Si le statut passe à COMPLETED, on enregistre le moment
-        if (status == DeliveryStatus.COMPLETED) {
-            deliveryPoint.setActualTime(LocalDateTime.now());
-        }
-
-        DeliveryPoint updatedDeliveryPoint = deliveryPointRepository.save(deliveryPoint);
-        return mapToResponse(updatedDeliveryPoint);
-    }
-
-    /**
-     * Met à jour le statut d'un point de livraison dans le contexte d'une tournée
-     * spécifique.
-     * Le statut est stocké dans RouteDeliveryPoint, permettant à un même point
-     * d'avoir
-     * des statuts différents dans différentes tournées.
-     */
     @Transactional
     public DeliveryPointResponse updateStatusInRoute(Long routeId, Long deliveryPointId, DeliveryStatus status) {
-        // Récupérer le RouteDeliveryPoint (relation entre route et delivery point)
         RouteDeliveryPoint rdp = resolveRouteDeliveryPoint(routeId, deliveryPointId);
 
-        // Mettre à jour le statut dans la relation (pas dans le DeliveryPoint global)
         rdp.setStatus(status);
 
-        // Si le statut passe à COMPLETED ou FAILED, on enregistre le moment
         if (status == DeliveryStatus.COMPLETED || status == DeliveryStatus.FAILED) {
             rdp.setActualTime(LocalDateTime.now());
         }
 
         RouteDeliveryPoint updatedRdp = routeDeliveryPointRepository.save(rdp);
-
-        // Retourner la réponse basée sur le DeliveryPoint
-        return mapToResponse(updatedRdp.getDeliveryPoint());
+        return mapToResponse(updatedRdp);
     }
 
     private RouteDeliveryPoint resolveRouteDeliveryPoint(Long routeId, Long deliveryPointId) {
@@ -210,10 +170,24 @@ public class DeliveryPointService {
                 .deliveryStatus(deliveryPoint.getStatus().toString())
                 .plannedTime(deliveryPoint.getPlannedTime())
                 .actualTime(deliveryPoint.getActualTime())
-                .sequenceOrder(null)
-                .isStartPoint(Boolean.FALSE)
-                .isEndPoint(Boolean.FALSE)
                 .build();
+    }
+
+    public DeliveryPointResponse mapToResponse(RouteDeliveryPoint rdp) {
+        DeliveryPointResponse base = mapToResponse(rdp.getDeliveryPoint());
+        base.setSequenceOrder(rdp.getSequenceOrder());
+        base.setIsStartPoint(Boolean.TRUE.equals(rdp.getIsStartPoint()));
+        base.setIsEndPoint(Boolean.TRUE.equals(rdp.getIsEndPoint()));
+        base.setDeliveryStatus(rdp.getStatus() != null ? rdp.getStatus().name() : base.getDeliveryStatus());
+        if (rdp.getPlannedTime() != null) {
+            base.setPlannedTime(rdp.getPlannedTime());
+            base.setDeliveryTime(rdp.getPlannedTime().toString());
+            base.setDeliveryDate(rdp.getPlannedTime().toString());
+        }
+        if (rdp.getActualTime() != null) {
+            base.setActualTime(rdp.getActualTime());
+        }
+        return base;
     }
 
     public DeliveryPointResponse createDeliveryPointFromAddress(Long addressId, DeliveryPointRequest defaultValues) {

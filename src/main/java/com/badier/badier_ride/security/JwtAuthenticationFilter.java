@@ -27,30 +27,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        boolean isAuthEndpoint = path.startsWith("/api/auth/");
-        logger.debug("Path: {}, skipping filter: {}", path, isAuthEndpoint);
-        return isAuthEndpoint;
+        return request.getRequestURI().startsWith("/api/auth/");
     }
 
     /**
-     * Extrait le token JWT depuis le cookie httpOnly en priorité,
-     * avec fallback sur le header Authorization (compatibilité Postman / clients API).
+     * Cookie httpOnly "jwt" en priorité ; fallback sur le header Authorization
+     * pour la compatibilité Postman / clients API tiers.
      */
     private String extractToken(HttpServletRequest request) {
-        // 1. Priorité : cookie httpOnly "jwt"
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("jwt".equals(cookie.getName())) {
-                    logger.debug("JWT token found in cookie");
                     return cookie.getValue();
                 }
             }
         }
-        // 2. Fallback : header Authorization: Bearer <token>
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            logger.debug("JWT token found in Authorization header (fallback)");
             return bearerToken.substring(7);
         }
         return null;
@@ -59,45 +52,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
-
         final String jwt = extractToken(request);
 
         if (jwt == null) {
-            logger.info("No JWT token found in request, proceeding with filter chain");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            logger.debug("Extracting username from JWT");
             final String username = jwtUtil.extractUsername(jwt);
-            logger.info("JWT username extracted: {}", username);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                logger.debug("Loading user details for username: {}", username);
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-                logger.debug("Validating token for user: {}", username);
                 if (jwtUtil.validateToken(jwt, userDetails)) {
-                    logger.info("JWT token is valid, setting authentication");
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
                             userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    logger.info("Authentication set in SecurityContext");
                 } else {
                     logger.warn("JWT token validation failed for user: {}", username);
                 }
             }
         } catch (Exception e) {
             logger.error("Error processing JWT token: {}", e.getMessage(), e);
-            logger.error("Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         }
 
-        logger.debug("Continuing filter chain");
         filterChain.doFilter(request, response);
     }
 }

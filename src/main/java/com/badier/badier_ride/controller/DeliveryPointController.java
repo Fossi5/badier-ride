@@ -1,9 +1,7 @@
 package com.badier.badier_ride.controller;
 
 import java.util.List;
-import org.slf4j.Logger;
 import org.springframework.data.domain.Page;
-import org.slf4j.LoggerFactory;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.badier.badier_ride.dto.DeliveryPointRequest;
 import com.badier.badier_ride.dto.DeliveryPointResponse;
-import com.badier.badier_ride.enumeration.DeliveryStatus;
 import com.badier.badier_ride.service.DeliveryPointService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/delivery-points")
 @RequiredArgsConstructor
 public class DeliveryPointController {
-    private static final Logger logger = LoggerFactory.getLogger(DeliveryPointController.class);
 
     private final DeliveryPointService deliveryPointService;
 
@@ -50,16 +46,7 @@ public class DeliveryPointController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<DeliveryPointResponse> createDeliveryPoint(@Valid @RequestBody DeliveryPointRequest request) {
-        // Logs de débogage
-        logger.info("Requête reçue pour createDeliveryPoint: {}", request);
-        try {
-            DeliveryPointResponse response = deliveryPointService.createDeliveryPoint(request);
-            logger.info("DeliveryPoint créé avec succès: {}", response.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            logger.error("Erreur lors de la création du DeliveryPoint: {}", e.getMessage(), e);
-            throw e;
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(deliveryPointService.createDeliveryPoint(request));
     }
 
     @PutMapping("/{id}")
@@ -68,34 +55,6 @@ public class DeliveryPointController {
             @PathVariable Long id,
             @Valid @RequestBody DeliveryPointRequest request) {
         return ResponseEntity.ok(deliveryPointService.updateDeliveryPoint(id, request));
-    }
-
-    /**
-     * @deprecated Utiliser updateDeliveryPointStatusInRoute() à la place
-     *             Cet endpoint met à jour le statut global du point (pas
-     *             recommandé)
-     */
-    @Deprecated
-    @PutMapping("/{id}/status")
-    public ResponseEntity<DeliveryPointResponse> updateDeliveryPointStatus(
-            @PathVariable Long id,
-            @RequestParam String status) {
-        logger.warn(
-                "Utilisation de l'ancien endpoint updateDeliveryPointStatus (deprecated). Utiliser /routes/{routeId}/delivery-points/{id}/status à la place");
-        logger.info("Mise à jour du statut du point de livraison {} vers {}", id, status);
-        try {
-            DeliveryStatus deliveryStatus = DeliveryStatus.valueOf(status);
-            DeliveryPointResponse response = deliveryPointService.updateStatus(id, deliveryStatus);
-            logger.info("Statut mis à jour avec succès pour le point {}", id);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            logger.error("Statut invalide: {}. Statuts valides: PENDING, IN_PROGRESS, COMPLETED, FAILED", status);
-            throw new RuntimeException(
-                    "Statut invalide: " + status + ". Statuts valides: PENDING, IN_PROGRESS, COMPLETED, FAILED");
-        } catch (Exception e) {
-            logger.error("Erreur lors de la mise à jour du statut pour le point {}: {}", id, e.getMessage(), e);
-            throw e;
-        }
     }
 
     @DeleteMapping("/{id}")

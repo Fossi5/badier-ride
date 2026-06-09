@@ -14,7 +14,9 @@ import com.badier.badier_ride.dto.DispatcherRequest;
 import com.badier.badier_ride.dto.DispatcherResponse;
 import com.badier.badier_ride.entity.Dispatcher;
 import com.badier.badier_ride.enumeration.UserRole;
+import com.badier.badier_ride.exception.InvalidOperationException;
 import com.badier.badier_ride.repository.DispatcherRepository;
+import com.badier.badier_ride.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,10 +25,18 @@ import lombok.RequiredArgsConstructor;
 public class AdminDispatcherService {
 
     private final DispatcherRepository dispatcherRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public DispatcherResponse createDispatcher(DispatcherRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new InvalidOperationException("Ce nom d'utilisateur est déjà utilisé");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new InvalidOperationException("Cet email est déjà utilisé");
+        }
+
         Dispatcher dispatcher = new Dispatcher();
         dispatcher.setUsername(request.getUsername());
         dispatcher.setPassword(passwordEncoder.encode(request.getPassword()));

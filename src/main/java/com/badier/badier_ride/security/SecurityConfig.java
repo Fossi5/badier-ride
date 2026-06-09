@@ -52,45 +52,32 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints publics
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/add/**").permitAll()
 
-                        // Gestion des adresses
-
-                        // Gestion des adresses
                         .requestMatchers(HttpMethod.GET, "/api/addresses/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/addresses/**").hasAnyRole("ADMIN", "DISPATCHER")
-                        .requestMatchers(HttpMethod.PUT, "/api/addresses/**")
-                        .hasAnyRole("ADMIN", "DISPATCHER", "DRIVER") // Tous les rôles
+                        .requestMatchers(HttpMethod.PUT, "/api/addresses/**").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.DELETE, "/api/addresses/**").hasAnyRole("ADMIN", "DISPATCHER")
 
-                        // Gestion des points de livraison
                         .requestMatchers(HttpMethod.GET, "/api/delivery-points/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
-                        // Permettre aux chauffeurs de mettre à jour le statut uniquement
-                        .requestMatchers(HttpMethod.PUT, "/api/delivery-points/*/status")
-                        .hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
+                        .requestMatchers(HttpMethod.PUT, "/api/delivery-points/*/status").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.PUT, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
 
-                        // Gestion des routes (tournées)
                         .requestMatchers(HttpMethod.GET, "/api/routes/driver").hasRole("DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/routes/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
 
-                        // Endpoints d'administration
-                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // Endpoints d'administration
                         .requestMatchers("/api/admin/drivers/available").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/dispatchers").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/dispatcher/**").hasRole("DISPATCHER")
                         .requestMatchers("/api/driver/**").hasRole("DRIVER")
 
-                        // Tout le reste nécessite authentification
                         .anyRequest().authenticated())
 
                 .sessionManagement(session -> session

@@ -15,7 +15,9 @@ import com.badier.badier_ride.dto.DriverResponse;
 import com.badier.badier_ride.entity.Driver;
 import com.badier.badier_ride.entity.Location;
 import com.badier.badier_ride.enumeration.UserRole;
+import com.badier.badier_ride.exception.InvalidOperationException;
 import com.badier.badier_ride.repository.DriverRepository;
+import com.badier.badier_ride.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,11 +26,18 @@ import lombok.RequiredArgsConstructor;
 public class AdminDriverService {
 
     private final DriverRepository driverRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public DriverResponse createDriver(DriverRequest request) {
-        // Créer un nouvel objet Location si des coordonnées sont fournies
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new InvalidOperationException("Ce nom d'utilisateur est déjà utilisé");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new InvalidOperationException("Cet email est déjà utilisé");
+        }
+
         Location location = null;
         if (request.getLatitude() != null && request.getLongitude() != null) {
             location = new Location();
@@ -80,7 +89,6 @@ public class AdminDriverService {
         if (request.getVehicleType() != null) driver.setVehicleType(request.getVehicleType());
         if (request.getIsAvailable() != null) driver.setIsAvailable(request.getIsAvailable());
 
-        // Mise à jour de la localisation si des coordonnées sont fournies
         if (request.getLatitude() != null && request.getLongitude() != null) {
             Location location = driver.getCurrentLocation();
             if (location == null) {

@@ -69,14 +69,13 @@ public class AuthController {
     }
 
     private void setJwtCookie(HttpServletResponse response, String token) {
-        // Utiliser l'en-tête Set-Cookie directement pour inclure SameSite
-        // (l'API Cookie Java standard ne supporte pas l'attribut SameSite)
+        // Set-Cookie manuel pour inclure SameSite (non supporté par l'API Cookie Java standard).
+        // Ajouter "; Secure" en production (HTTPS).
         String cookieValue = "jwt=" + token
                 + "; HttpOnly"
                 + "; Path=/"
                 + "; Max-Age=86400"
                 + "; SameSite=Strict";
-        // Secure=false en développement (HTTP) ; passer à true en production (HTTPS)
         response.addHeader("Set-Cookie", cookieValue);
     }
 }
