@@ -13,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.badier.badier_ride.dto.DispatcherRequest;
 import com.badier.badier_ride.dto.DispatcherResponse;
 import com.badier.badier_ride.entity.Dispatcher;
+import com.badier.badier_ride.entity.User;
 import com.badier.badier_ride.enumeration.UserRole;
 import com.badier.badier_ride.exception.InvalidOperationException;
+import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.repository.DispatcherRepository;
 import com.badier.badier_ride.repository.UserRepository;
 
@@ -55,13 +57,13 @@ public class AdminDispatcherService {
     }
 
     public List<DispatcherResponse> getAllDispatchers() {
-        return dispatcherRepository.findAll().stream()
+        return dispatcherRepository.findByActiveTrue().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public Page<DispatcherResponse> getAllDispatchersPaged(int page, int size) {
-        return dispatcherRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
+        return dispatcherRepository.findByActiveTrue(PageRequest.of(page, size, Sort.by("id").descending()))
                 .map(this::mapToResponse);
     }
 
@@ -81,7 +83,10 @@ public class AdminDispatcherService {
 
     @Transactional
     public void deleteDispatcher(Long id) {
-        dispatcherRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Dispatcher", id));
+        user.setActive(false);
+        userRepository.save(user);
     }
 
     public List<DispatcherResponse> getDispatchersByDepartment(String department) {

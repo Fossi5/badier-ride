@@ -39,6 +39,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private UserRole role;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean active = true;
+
     @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -63,6 +67,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return Boolean.TRUE.equals(active);
     }
 }

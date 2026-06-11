@@ -33,5 +33,6 @@ public class Address {
     private Double longitude;
 
     @Column(name = "is_verified")
+    @Builder.Default
     private Boolean isVerified = false;
 }

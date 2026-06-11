@@ -48,6 +48,11 @@ public class AuthService {
                 .build();
     }
 
+    public User loadUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
+    }
+
     public AuthResponse authenticate(AuthRequest request) {
         try {
             authenticationManager.authenticate(
@@ -57,7 +62,7 @@ public class AuthService {
                 )
             );
         } catch (Exception e) {
-            throw new AppException("Invalid username or password", HttpStatus.UNAUTHORIZED);
+            throw new AppException("Identifiant ou mot de passe invalide", HttpStatus.UNAUTHORIZED);
         }
     
         var user = userRepository.findByUsername(request.getUsername())

@@ -38,7 +38,12 @@ public class RouteController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
-    public ResponseEntity<List<RouteResponse>> getAllRoutes() {
+    public ResponseEntity<List<RouteResponse>> getAllRoutes(Authentication auth) {
+        boolean isDispatcher = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_DISPATCHER"));
+        if (isDispatcher) {
+            return ResponseEntity.ok(routeService.getRoutesByDispatcherUsername(auth.getName()));
+        }
         return ResponseEntity.ok(routeService.getAllRoutes());
     }
 

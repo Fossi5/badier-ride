@@ -32,6 +32,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final DatabaseUserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -66,11 +67,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/delivery-points/**").hasAnyRole("ADMIN", "DISPATCHER")
 
+                        .requestMatchers("/api/routes/*/delivery-points/*/proof/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/routes/driver").hasRole("DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/routes/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
+
+                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/alerts/**").hasAnyRole("ADMIN", "DISPATCHER")
 
                         .requestMatchers("/api/admin/drivers/available").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/dispatchers").hasAnyRole("ADMIN", "DISPATCHER")
@@ -83,6 +88,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
@@ -102,7 +108,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3001"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

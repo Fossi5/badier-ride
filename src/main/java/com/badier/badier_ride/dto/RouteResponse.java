@@ -1,5 +1,6 @@
 package com.badier.badier_ride.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,4 +24,7 @@ public class RouteResponse {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String notes;
+    private Boolean recurring;
+    private String recurrenceType;
+    private LocalDate recurrenceEndDate;
 }

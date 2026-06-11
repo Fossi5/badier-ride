@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
 import com.badier.badier_ride.dto.DeliveryPointRequest;
 import com.badier.badier_ride.dto.DeliveryPointResponse;
@@ -187,6 +186,9 @@ public class DeliveryPointService {
         if (rdp.getActualTime() != null) {
             base.setActualTime(rdp.getActualTime());
         }
+        base.setProofImagePath(rdp.getProofImagePath());
+        base.setProofValidated(Boolean.TRUE.equals(rdp.getProofValidated()));
+        base.setHasConfirmationCode(rdp.getConfirmationCode() != null);
         return base;
     }
 

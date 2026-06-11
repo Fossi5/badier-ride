@@ -6,13 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.enumeration.DeliveryStatus;
+import com.badier.badier_ride.enumeration.RecurrenceType;
 import com.badier.badier_ride.enumeration.RouteStatus;
 
 @Builder
@@ -38,6 +39,7 @@ public class Route {
 
     // Relation OneToMany vers la table d'association enrichie
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<RouteDeliveryPoint> routeDeliveryPoints = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
@@ -50,6 +52,17 @@ public class Route {
     private LocalDateTime endTime;
 
     private String notes;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean recurring = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RecurrenceType recurrenceType;
+
+    @Column
+    private LocalDate recurrenceEndDate;
 
     /**
      * Retourne une vue immuable des points de livraison assignés à cette tournée.

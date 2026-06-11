@@ -12,4 +12,6 @@ import com.badier.badier_ride.entity.Dispatcher;
 public interface DispatcherRepository extends JpaRepository<Dispatcher, Long> {
     Optional<Dispatcher> findByUsername(String username);
     List<Dispatcher> findByDepartment(String department);
+    List<Dispatcher> findByActiveTrue();
+    org.springframework.data.domain.Page<Dispatcher> findByActiveTrue(org.springframework.data.domain.Pageable pageable);
 }

@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.badier.badier_ride.dto.AddressRequest;
 import com.badier.badier_ride.dto.AddressResponse;
 import com.badier.badier_ride.entity.Address;
+import com.badier.badier_ride.exception.InvalidOperationException;
 import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.repository.AddressRepository;
+import com.badier.badier_ride.repository.DeliveryPointRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class AddressService {
 
     private final AddressRepository addressRepository;
+    private final DeliveryPointRepository deliveryPointRepository;
 
     @Transactional
     public AddressResponse createAddress(AddressRequest request) {
@@ -79,6 +82,9 @@ public class AddressService {
 
     @Transactional
     public void deleteAddress(Long id) {
+        if (deliveryPointRepository.existsByAddressId(id)) {
+            throw new InvalidOperationException("Cette adresse est utilisée par un ou plusieurs points de livraison");
+        }
         addressRepository.deleteById(id);
     }
 

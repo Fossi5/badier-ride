@@ -1,7 +1,10 @@
 package com.badier.badier_ride.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.badier.badier_ride.enumeration.RecurrenceType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,4 +34,9 @@ public class RouteRequest {
 
     @NotBlank(message = "Le statut de la tournée est obligatoire")
     private String status;
+
+    @Builder.Default
+    private Boolean recurring = false;
+    private RecurrenceType recurrenceType;
+    private LocalDate recurrenceEndDate;
 }

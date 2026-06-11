@@ -1,7 +1,6 @@
 package com.badier.badier_ride.service;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -29,6 +28,7 @@ import com.badier.badier_ride.entity.Route;
 import com.badier.badier_ride.entity.RouteDeliveryPoint;
 import com.badier.badier_ride.entity.User;
 import com.badier.badier_ride.enumeration.DeliveryStatus;
+import com.badier.badier_ride.enumeration.NotificationType;
 import com.badier.badier_ride.enumeration.RouteStatus;
 import com.badier.badier_ride.exception.InvalidOperationException;
 import com.badier.badier_ride.exception.ResourceNotFoundException;
@@ -50,8 +50,9 @@ public class RouteService {
     private final DeliveryPointRepository deliveryPointRepository;
     private final DeliveryPointService deliveryPointService;
     private final RouteDeliveryPointRepository routeDeliveryPointRepository;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Transactional
     public RouteResponse createRoute(RouteRequest request) {
@@ -59,6 +60,10 @@ public class RouteService {
 
         User driver = userRepository.findById(request.getDriverId())
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + request.getDriverId()));
+
+        if (routeRepository.existsByDriverIdAndStatus(request.getDriverId(), RouteStatus.IN_PROGRESS)) {
+            throw new InvalidOperationException("Ce chauffeur est déjà en tournée active");
+        }
 
         User dispatcher = userRepository.findById(request.getDispatcherId())
                 .orElseThrow(() -> new ResourceNotFoundException("Dispatcher not found with ID: " + request.getDispatcherId()));
@@ -79,6 +84,9 @@ public class RouteService {
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .notes(request.getNotes())
+                .recurring(request.getRecurring() != null ? request.getRecurring() : false)
+                .recurrenceType(request.getRecurrenceType())
+                .recurrenceEndDate(request.getRecurrenceEndDate())
                 .build();
 
         Route savedRoute = routeRepository.save(route);
@@ -100,6 +108,25 @@ public class RouteService {
         }
 
         log.info("Route created successfully with ID: {}", savedRoute.getId());
+
+        notificationService.send(
+            driver,
+            dispatcher,
+            NotificationType.NEW_ROUTE,
+            "Nouvelle tournée assignée : " + savedRoute.getName()
+        );
+
+        if (driver.getEmail() != null) {
+            emailService.send(
+                driver.getEmail(),
+                "Nouvelle tournée assignée",
+                "Bonjour " + driver.getUsername() + ",\n\n" +
+                "Une nouvelle tournée vous a été assignée : " + savedRoute.getName() + "\n" +
+                "Heure de départ prévue : " + (savedRoute.getStartTime() != null ? savedRoute.getStartTime() : "Non définie") + "\n\n" +
+                "Connectez-vous à Badier Ride pour voir les détails."
+            );
+        }
+
         return mapToResponse(savedRoute);
     }
 
@@ -144,15 +171,25 @@ public class RouteService {
                 .collect(Collectors.toList());
     }
 
+    public List<RouteResponse> getRoutesByDispatcherUsername(String username) {
+        return routeRepository.findByDispatcherUsername(username).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public RouteResponse updateRoute(Long id, RouteRequest request) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
+        User newDriver = null;
         if (request.getDriverId() != null && !request.getDriverId().equals(route.getDriver().getId())) {
-            User driver = userRepository.findById(request.getDriverId())
+            newDriver = userRepository.findById(request.getDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + request.getDriverId()));
-            route.setDriver(driver);
+            if (routeRepository.existsByDriverIdAndStatus(request.getDriverId(), RouteStatus.IN_PROGRESS)) {
+                throw new InvalidOperationException("Ce chauffeur est déjà en tournée active");
+            }
+            route.setDriver(newDriver);
         }
 
         if (request.getDispatcherId() != null && !request.getDispatcherId().equals(route.getDispatcher().getId())) {
@@ -183,6 +220,18 @@ public class RouteService {
 
         Route updatedRoute = routeRepository.save(route);
         log.info("Route updated successfully with ID: {}", updatedRoute.getId());
+
+        if (newDriver != null && newDriver.getEmail() != null) {
+            emailService.send(
+                newDriver.getEmail(),
+                "Nouvelle tournée assignée",
+                "Bonjour " + newDriver.getUsername() + ",\n\n" +
+                "Une nouvelle tournée vous a été assignée : " + updatedRoute.getName() + "\n" +
+                "Heure de départ prévue : " + (updatedRoute.getStartTime() != null ? updatedRoute.getStartTime() : "Non définie") + "\n\n" +
+                "Connectez-vous à Badier Ride pour voir les détails."
+            );
+        }
+
         return mapToResponse(updatedRoute);
     }
 
@@ -335,12 +384,6 @@ public class RouteService {
 
     @Transactional
     public RouteResponse removeDeliveryPointFromRoute(Long routeId, Long deliveryPointId) {
-        Route route = routeRepository.findById(routeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + routeId));
-
-        DeliveryPoint deliveryPoint = deliveryPointRepository.findById(deliveryPointId)
-                .orElseThrow(() -> new ResourceNotFoundException("Delivery point not found with ID: " + deliveryPointId));
-
         routeDeliveryPointRepository.deleteByRouteIdAndDeliveryPointId(routeId, deliveryPointId);
 
         log.info("Delivery point removed from route with ID: {}", routeId);
@@ -426,6 +469,9 @@ public class RouteService {
                 .startTime(route.getStartTime())
                 .endTime(route.getEndTime())
                 .notes(route.getNotes())
+                .recurring(route.getRecurring())
+                .recurrenceType(route.getRecurrenceType() != null ? route.getRecurrenceType().name() : null)
+                .recurrenceEndDate(route.getRecurrenceEndDate())
                 .build();
     }
 

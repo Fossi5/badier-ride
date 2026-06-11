@@ -41,7 +41,7 @@ public class MapsApiService {
             double destLat, double destLng) {
         
         try {
-            URI uri = UriComponentsBuilder.fromHttpUrl(apiBaseUrl + "/distancematrix/json")
+            URI uri = UriComponentsBuilder.fromUri(URI.create(apiBaseUrl + "/distancematrix/json"))
                     .queryParam("origins", originLat + "," + originLng)
                     .queryParam("destinations", destLat + "," + destLng)
                     .queryParam("mode", "driving")
@@ -98,7 +98,7 @@ public class MapsApiService {
             }
             
             // Construire l'URI pour l'API Directions
-            URI uri = UriComponentsBuilder.fromHttpUrl(apiBaseUrl + "/directions/json")
+            URI uri = UriComponentsBuilder.fromUri(URI.create(apiBaseUrl + "/directions/json"))
                     .queryParam("origin", origin.getLatitude() + "," + origin.getLongitude())
                     .queryParam("destination", origin.getLatitude() + "," + origin.getLongitude()) // Retour au point de départ
                     .queryParam("waypoints", waypointsBuilder.toString())

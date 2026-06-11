@@ -27,4 +27,7 @@ public class DeliveryPointResponse {
     private Integer sequenceOrder;
     private Boolean isStartPoint;
     private Boolean isEndPoint;
+    private String proofImagePath;
+    private Boolean proofValidated;
+    private Boolean hasConfirmationCode;
 }

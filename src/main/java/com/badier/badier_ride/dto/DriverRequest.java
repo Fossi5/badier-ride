@@ -1,5 +1,7 @@
 package com.badier.badier_ride.dto;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -21,6 +23,11 @@ public class DriverRequest {
     private String phoneNumber;
     private String vehicleType;
     private Boolean isAvailable;
+    @DecimalMin(value = "-90.0", message = "Latitude invalide")
+    @DecimalMax(value = "90.0", message = "Latitude invalide")
     private Double latitude;
+
+    @DecimalMin(value = "-180.0", message = "Longitude invalide")
+    @DecimalMax(value = "180.0", message = "Longitude invalide")
     private Double longitude;
 }

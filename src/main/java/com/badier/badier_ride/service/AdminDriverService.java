@@ -14,8 +14,10 @@ import com.badier.badier_ride.dto.DriverRequest;
 import com.badier.badier_ride.dto.DriverResponse;
 import com.badier.badier_ride.entity.Driver;
 import com.badier.badier_ride.entity.Location;
+import com.badier.badier_ride.entity.User;
 import com.badier.badier_ride.enumeration.UserRole;
 import com.badier.badier_ride.exception.InvalidOperationException;
+import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.repository.DriverRepository;
 import com.badier.badier_ride.repository.UserRepository;
 
@@ -28,6 +30,7 @@ public class AdminDriverService {
     private final DriverRepository driverRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Transactional
     public DriverResponse createDriver(DriverRequest request) {
@@ -57,6 +60,15 @@ public class AdminDriverService {
         driver.setCurrentLocation(location);
 
         Driver savedDriver = driverRepository.save(driver);
+
+        emailService.send(
+            savedDriver.getEmail(),
+            "Bienvenue sur Badier Ride",
+            "Bonjour " + savedDriver.getUsername() + ",\n\n" +
+            "Votre compte chauffeur a été créé.\n" +
+            "Connectez-vous avec votre nom d'utilisateur pour commencer."
+        );
+
         return mapToResponse(savedDriver);
     }
 
@@ -67,13 +79,13 @@ public class AdminDriverService {
     }
 
     public List<DriverResponse> getAllDrivers() {
-        return driverRepository.findAll().stream()
+        return driverRepository.findByActiveTrue().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public Page<DriverResponse> getAllDriversPaged(int page, int size) {
-        return driverRepository.findAll(PageRequest.of(page, size, Sort.by("id").descending()))
+        return driverRepository.findByActiveTrue(PageRequest.of(page, size, Sort.by("id").descending()))
                 .map(this::mapToResponse);
     }
 
@@ -106,7 +118,10 @@ public class AdminDriverService {
 
     @Transactional
     public void deleteDriver(Long id) {
-        driverRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver", id));
+        user.setActive(false);
+        userRepository.save(user);
     }
 
     public List<DriverResponse> getAvailableDrivers() {

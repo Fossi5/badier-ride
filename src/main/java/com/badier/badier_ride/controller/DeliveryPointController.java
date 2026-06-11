@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.badier.badier_ride.dto.DeliveryPointRequest;
 import com.badier.badier_ride.dto.DeliveryPointResponse;
+import com.badier.badier_ride.enumeration.DeliveryStatus;
 import com.badier.badier_ride.service.DeliveryPointService;
 
 import lombok.RequiredArgsConstructor;

@@ -10,9 +10,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.Duration;
 
-/**
- * Configuration pour le client HTTP utilisé pour les appels API externes
- */
 @Configuration
 public class RestTemplateConfig {
 
@@ -22,8 +19,8 @@ public class RestTemplateConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         return builder
-                .setConnectTimeout(Duration.ofMillis(mapsApiTimeout))
-                .setReadTimeout(Duration.ofMillis(mapsApiTimeout))
+                .connectTimeout(Duration.ofMillis(mapsApiTimeout))
+                .readTimeout(Duration.ofMillis(mapsApiTimeout))
                 .build();
     }
 

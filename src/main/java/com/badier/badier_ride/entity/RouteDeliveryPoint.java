@@ -52,4 +52,14 @@ public class RouteDeliveryPoint {
     // Heure réelle de livraison pour cette tournée
     @Column(name = "actual_time")
     private LocalDateTime actualTime;
+
+    @Column
+    private String proofImagePath;
+
+    @Column(length = 6)
+    private String confirmationCode;
+
+    @Column
+    @Builder.Default
+    private Boolean proofValidated = false;
 }

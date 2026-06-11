@@ -14,4 +14,6 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
     List<Driver> findByIsAvailable(Boolean isAvailable);
     Optional<Driver> findByPhoneNumber(String phoneNumber);
     List<Driver> findByVehicleType(String vehicleType);
+    List<Driver> findByActiveTrue();
+    org.springframework.data.domain.Page<Driver> findByActiveTrue(org.springframework.data.domain.Pageable pageable);
 }

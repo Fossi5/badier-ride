@@ -12,10 +12,12 @@ import com.badier.badier_ride.enumeration.RouteStatus;
 @Repository
 public interface RouteRepository extends JpaRepository<Route, Long> {
     List<Route> findByStatus(RouteStatus status);
-
     List<Route> findByDriverId(Long driverId);
-
     List<Route> findByDispatcherId(Long dispatcherId);
-
     List<Route> findByStartTimeBetween(LocalDateTime start, LocalDateTime end);
+    List<Route> findByDispatcherUsername(String username);
+    org.springframework.data.domain.Page<Route> findByDispatcherUsername(String username, org.springframework.data.domain.Pageable pageable);
+    List<Route> findByDriverUsername(String username);
+    boolean existsByDriverIdAndStatus(Long driverId, RouteStatus status);
+    List<Route> findByRecurringTrue();
 }
