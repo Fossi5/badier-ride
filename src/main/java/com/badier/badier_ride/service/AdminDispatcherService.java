@@ -32,10 +32,13 @@ public class AdminDispatcherService {
 
     @Transactional
     public DispatcherResponse createDispatcher(DispatcherRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new InvalidOperationException("Le mot de passe est obligatoire");
+        }
+        if (userRepository.existsByUsernameAndActiveTrue(request.getUsername())) {
             throw new InvalidOperationException("Ce nom d'utilisateur est déjà utilisé");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailAndActiveTrue(request.getEmail())) {
             throw new InvalidOperationException("Cet email est déjà utilisé");
         }
 

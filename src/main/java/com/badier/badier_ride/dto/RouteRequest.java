@@ -24,7 +24,6 @@ public class RouteRequest {
     @NotNull(message = "L'identifiant du chauffeur est obligatoire")
     private Long driverId;
 
-    @NotNull(message = "L'identifiant du dispatcher est obligatoire")
     private Long dispatcherId;
 
     private List<Long> deliveryPointIds;

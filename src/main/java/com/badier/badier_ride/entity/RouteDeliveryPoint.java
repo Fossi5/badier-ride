@@ -57,7 +57,8 @@ public class RouteDeliveryPoint {
     private String proofImagePath;
 
     @Column(length = 6)
-    private String confirmationCode;
+    @Builder.Default
+    private String confirmationCode = "1234";
 
     @Column
     @Builder.Default

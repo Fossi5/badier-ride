@@ -8,6 +8,7 @@ import com.badier.badier_ride.entity.Driver;
 import com.badier.badier_ride.entity.Route;
 import com.badier.badier_ride.enumeration.AlertPriority;
 import com.badier.badier_ride.enumeration.AlertStatus;
+import com.badier.badier_ride.enumeration.NotificationType;
 import com.badier.badier_ride.exception.ResourceNotFoundException;
 import com.badier.badier_ride.repository.AlertRepository;
 import com.badier.badier_ride.repository.DispatcherRepository;
@@ -15,6 +16,7 @@ import com.badier.badier_ride.repository.DriverRepository;
 import com.badier.badier_ride.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ public class AlertService {
     private final DispatcherRepository dispatcherRepository;
     private final DriverRepository driverRepository;
     private final RouteRepository routeRepository;
+    private final NotificationService notificationService;
 
     public AlertResponse createAlert(AlertRequest request, String dispatcherUsername) {
         Dispatcher dispatcher = dispatcherRepository.findByUsername(dispatcherUsername)
@@ -45,13 +48,28 @@ public class AlertService {
             alert.setRelatedRoute(route);
         }
 
+        Driver driver = null;
         if (request.getDriverId() != null) {
-            Driver driver = driverRepository.findById(request.getDriverId())
+            driver = driverRepository.findById(request.getDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found: " + request.getDriverId()));
             alert.setDriver(driver);
         }
 
-        return mapToResponse(alertRepository.save(alert));
+        Alert saved = alertRepository.save(alert);
+
+        String priorityLabel = switch (saved.getPriority()) {
+            case LOW      -> "Faible";
+            case MEDIUM   -> "Moyen";
+            case HIGH     -> "Élevé";
+            case CRITICAL -> "Critique";
+        };
+        String message = "[" + priorityLabel + "] " + saved.getTitle();
+
+        if (driver != null) {
+            notificationService.send(driver, dispatcher, NotificationType.ALERT, message);
+        }
+
+        return mapToResponse(saved);
     }
 
     public List<AlertResponse> getAllAlerts() {

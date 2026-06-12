@@ -34,10 +34,13 @@ public class AdminDriverService {
 
     @Transactional
     public DriverResponse createDriver(DriverRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new InvalidOperationException("Le mot de passe est obligatoire");
+        }
+        if (userRepository.existsByUsernameAndActiveTrue(request.getUsername())) {
             throw new InvalidOperationException("Ce nom d'utilisateur est déjà utilisé");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailAndActiveTrue(request.getEmail())) {
             throw new InvalidOperationException("Cet email est déjà utilisé");
         }
 
@@ -125,7 +128,7 @@ public class AdminDriverService {
     }
 
     public List<DriverResponse> getAvailableDrivers() {
-        return driverRepository.findByIsAvailable(true).stream()
+        return driverRepository.findByIsAvailableAndActiveTrue(true).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
