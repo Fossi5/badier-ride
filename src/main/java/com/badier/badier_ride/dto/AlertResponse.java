@@ -14,6 +14,7 @@ public class AlertResponse {
     private String status;
     private String dispatcherUsername;
     private String driverUsername;
+    private String routeName;
     private LocalDateTime createdAt;
     private LocalDateTime resolvedAt;
     private String resolutionNote;

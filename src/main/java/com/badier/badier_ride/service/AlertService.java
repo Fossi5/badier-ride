@@ -106,6 +106,7 @@ public class AlertService {
                 .status(a.getStatus().name())
                 .dispatcherUsername(a.getDispatcher() != null ? a.getDispatcher().getUsername() : null)
                 .driverUsername(a.getDriver() != null ? a.getDriver().getUsername() : null)
+                .routeName(a.getRelatedRoute() != null ? a.getRelatedRoute().getName() : null)
                 .createdAt(a.getCreatedAt())
                 .resolvedAt(a.getResolvedAt())
                 .resolutionNote(a.getResolutionNote())
