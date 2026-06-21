@@ -94,8 +94,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         log.error("DataIntegrityViolationException: {}", ex.getMessage());
 
+        String message;
+        String rootMsg = ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage();
+        if (rootMsg != null) {
+            String lower = rootMsg.toLowerCase();
+            if (lower.contains("username")) {
+                message = "Ce nom d'utilisateur est déjà utilisé";
+            } else if (lower.contains("email")) {
+                message = "Cette adresse email est déjà utilisée";
+            } else if (lower.contains("phone") || lower.contains("telephone")) {
+                message = "Ce numéro de téléphone est déjà utilisé";
+            } else if (lower.contains("foreign key") || lower.contains("clé étrangère")) {
+                message = "Impossible de supprimer : cet élément est utilisé ailleurs";
+            } else {
+                message = "Ces informations sont déjà enregistrées dans le système";
+            }
+        } else {
+            message = "Ces informations sont déjà enregistrées dans le système";
+        }
+
         Map<String, Object> response = new HashMap<>();
-        response.put("error", "Conflit de données : une ressource avec ces informations existe déjà");
+        response.put("error", message);
         response.put("status", HttpStatus.CONFLICT.value());
         response.put("timestamp", java.time.LocalDateTime.now().toString());
 

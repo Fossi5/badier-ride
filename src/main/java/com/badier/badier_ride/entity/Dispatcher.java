@@ -22,9 +22,6 @@ public class Dispatcher extends User {
     @OneToMany(mappedBy = "dispatcher")
     private List<Route> managedRoutes;
     
-    // Un dispatcher peut gérer plusieurs alertes
-    @OneToMany(mappedBy = "dispatcher")
-    private List<Alert> managedAlerts;
 }
 
 

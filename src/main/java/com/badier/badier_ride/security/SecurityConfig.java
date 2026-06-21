@@ -70,13 +70,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/routes/*/delivery-points/*/proof/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/routes/driver").hasRole("DRIVER")
                         .requestMatchers(HttpMethod.GET, "/api/routes/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/routes/*/messages").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER", "DRIVER")
                         .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasAnyRole("ADMIN", "DISPATCHER")
 
                         .requestMatchers("/api/notifications/**").authenticated()
-                        .requestMatchers("/api/alerts/**").hasAnyRole("ADMIN", "DISPATCHER")
-
+.requestMatchers(HttpMethod.GET, "/api/admin/drivers").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/drivers/available").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/dispatchers").hasAnyRole("ADMIN", "DISPATCHER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

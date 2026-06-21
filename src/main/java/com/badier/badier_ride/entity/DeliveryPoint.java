@@ -29,7 +29,14 @@ public class DeliveryPoint {
     @Column(name = "client_phone")
     private String clientPhone;
 
-    private String notes;
+    @Column(name = "client_email")
+    private String clientEmail;
+
+    @Column(name = "client_note", columnDefinition = "TEXT")
+    private String clientNote;
+
+    @Column(name = "delivery_note", columnDefinition = "TEXT")
+    private String deliveryNote;
 
     @Enumerated(EnumType.STRING)
     private DeliveryStatus status;

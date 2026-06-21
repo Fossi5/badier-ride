@@ -27,7 +27,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new AppException("Username already exists", HttpStatus.BAD_REQUEST);
+            throw new AppException("Ce nom d'utilisateur est déjà utilisé", HttpStatus.BAD_REQUEST);
         }
 
         var user = User.builder()
@@ -50,7 +50,7 @@ public class AuthService {
 
     public User loadUser(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Utilisateur introuvable", HttpStatus.NOT_FOUND));
     }
 
     public AuthResponse authenticate(AuthRequest request) {
@@ -66,7 +66,7 @@ public class AuthService {
         }
     
         var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new AppException("User not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("Utilisateur introuvable", HttpStatus.NOT_FOUND));
     
         var jwt = jwtUtil.generateToken(user);
 

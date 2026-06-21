@@ -34,6 +34,7 @@ public class AdminDriverController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<List<DriverResponse>> getAllDrivers() {
         return ResponseEntity.ok(adminDriverService.getAllDrivers());
     }

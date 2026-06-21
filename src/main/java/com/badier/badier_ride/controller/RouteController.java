@@ -91,9 +91,6 @@ public class RouteController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<RouteResponse> createRoute(@Valid @RequestBody RouteRequest request) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        log.debug("Authenticated user: {}", auth.getName());
-        log.debug("Roles: {}", auth.getAuthorities());
         return ResponseEntity.status(HttpStatus.CREATED).body(routeService.createRoute(request));
     }
 

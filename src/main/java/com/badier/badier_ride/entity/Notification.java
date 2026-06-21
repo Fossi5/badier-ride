@@ -44,10 +44,6 @@ public class Notification {
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
-    @ManyToOne
-    @JoinColumn(name = "alert_id")
-    private Alert alert;
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

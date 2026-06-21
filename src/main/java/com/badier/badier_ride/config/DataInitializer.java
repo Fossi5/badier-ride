@@ -24,7 +24,6 @@ public class DataInitializer implements CommandLineRunner {
     private final RouteRepository routeRepository;
     private final RouteDeliveryPointRepository routeDeliveryPointRepository;
     private final NotificationRepository notificationRepository;
-    private final AlertRepository alertRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -162,50 +161,10 @@ public class DataInitializer implements CommandLineRunner {
                         "Nouvelle tournée assignée : " + route3.getName()),
                 notif(dispatcher1, driver1, NotificationType.ROUTE_UPDATE,
                         "Tournée mise à jour — vérifiez les horaires"),
-                notif(dispatcher2, driver1, NotificationType.ALERT,
-                        "Alerte : retard signalé sur votre secteur"),
                 notif(admin, dispatcher1, NotificationType.SYSTEM,
                         "Maintenance planifiée ce week-end")
         ));
 
-        // ── Alertes ───────────────────────────────────────────────────────────
-
-        Alert alert1 = new Alert();
-        alert1.setTitle("Retard livraison Ambassade");
-        alert1.setDescription("Le chauffeur Thomas Bernard n'a pas pu accéder au site — accès refusé sans badge.");
-        alert1.setPriority(AlertPriority.HIGH);
-        alert1.setStatus(AlertStatus.NEW);
-        alert1.setRelatedRoute(route3);
-        alert1.setDispatcher(dispatcher2);
-        alert1.setDriver(driver3);
-        alertRepository.save(alert1);
-
-        Alert alert2 = new Alert();
-        alert2.setTitle("Véhicule en panne");
-        alert2.setDescription("Camionnette de Jean Durand immobilisée — pneu crevé. Dépannage en cours.");
-        alert2.setPriority(AlertPriority.CRITICAL);
-        alert2.setStatus(AlertStatus.IN_PROGRESS);
-        alert2.setRelatedRoute(route1);
-        alert2.setDispatcher(dispatcher1);
-        alert2.setDriver(driver1);
-        alertRepository.save(alert2);
-
-        Alert alert3 = new Alert();
-        alert3.setTitle("Colis endommagé");
-        alert3.setDescription("Un colis destiné à la Galerie d'Art Moulin présente des dommages visibles à la réception.");
-        alert3.setPriority(AlertPriority.MEDIUM);
-        alert3.setStatus(AlertStatus.RESOLVED);
-        alert3.setResolutionNote("Signalement effectué, remplacement commandé.");
-        alert3.setDispatcher(dispatcher1);
-        alertRepository.save(alert3);
-
-        Alert alert4 = new Alert();
-        alert4.setTitle("Zone embouteillée — Rue Neuve");
-        alert4.setDescription("Travaux en cours, itinéraire de substitution nécessaire.");
-        alert4.setPriority(AlertPriority.LOW);
-        alert4.setStatus(AlertStatus.NEW);
-        alert4.setDispatcher(dispatcher1);
-        alertRepository.save(alert4);
     }
 
     // ── Builders privés ───────────────────────────────────────────────────────
@@ -241,10 +200,10 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
     }
 
-    private DeliveryPoint dp(Address address, String client, String phone, String notes,
+    private DeliveryPoint dp(Address address, String client, String phone, String deliveryNote,
                               DeliveryStatus status, LocalDateTime planned, LocalDateTime actual) {
         return DeliveryPoint.builder()
-                .address(address).clientName(client).clientPhone(phone).notes(notes)
+                .address(address).clientName(client).clientPhone(phone).deliveryNote(deliveryNote)
                 .status(status).plannedTime(planned).actualTime(actual)
                 .build();
     }

@@ -22,11 +22,7 @@ public class DeliveryPointRequest {
     private String clientNote;
     private String deliveryNote;
 
-    @NotBlank(message = "L'heure de livraison est obligatoire")
     private String deliveryTime;
-
     private String deliveryDate;
-
-    @NotBlank(message = "Le statut de livraison est obligatoire")
     private String deliveryStatus;
 }

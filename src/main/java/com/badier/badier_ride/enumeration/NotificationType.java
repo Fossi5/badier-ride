@@ -5,5 +5,6 @@ public enum NotificationType {
     NEW_ROUTE,
     ROUTE_UPDATE,
     ALERT,
-    SYSTEM
+    SYSTEM,
+    MESSAGE
 }

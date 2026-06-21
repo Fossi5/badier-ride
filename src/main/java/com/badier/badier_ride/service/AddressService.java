@@ -35,7 +35,7 @@ public class AddressService {
                 .country(request.getCountry())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .isVerified(false)
+                .isVerified(request.getIsVerified() != null ? request.getIsVerified() : false)
                 .build();
 
         Address savedAddress = addressRepository.save(address);
@@ -74,7 +74,7 @@ public class AddressService {
         address.setCountry(request.getCountry());
         address.setLatitude(request.getLatitude());
         address.setLongitude(request.getLongitude());
-        address.setIsVerified(false); // Reset verification status after update
+        address.setIsVerified(request.getIsVerified() != null ? request.getIsVerified() : address.getIsVerified());
 
         Address updatedAddress = addressRepository.save(address);
         return mapToResponse(updatedAddress);

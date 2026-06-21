@@ -7,6 +7,8 @@ import com.badier.badier_ride.enumeration.NotificationType;
 import com.badier.badier_ride.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +19,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void send(User receiver, User sender, NotificationType type, String message) {
         Notification notification = new Notification();
         notification.setReceiver(receiver);

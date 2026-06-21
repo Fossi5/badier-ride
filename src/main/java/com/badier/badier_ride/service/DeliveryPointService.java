@@ -60,9 +60,11 @@ public class DeliveryPointService {
                 .address(address)
                 .clientName(request.getClientName())
                 .clientPhone(request.getClientPhoneNumber())
-                .notes(request.getClientNote())
-                .status(DeliveryStatus.valueOf(request.getDeliveryStatus()))
-                .plannedTime(LocalDateTime.parse(request.getDeliveryTime(), DATE_TIME_FORMATTER))
+                .clientEmail(request.getClientEmail())
+                .clientNote(request.getClientNote())
+                .deliveryNote(request.getDeliveryNote())
+                .status(request.getDeliveryStatus() != null ? DeliveryStatus.valueOf(request.getDeliveryStatus()) : DeliveryStatus.PENDING)
+                .plannedTime(request.getDeliveryTime() != null ? LocalDateTime.parse(request.getDeliveryTime(), DATE_TIME_FORMATTER) : null)
                 .build();
 
         DeliveryPoint savedDeliveryPoint = deliveryPointRepository.save(deliveryPoint);
@@ -92,10 +94,15 @@ public class DeliveryPointService {
                 .orElseThrow(() -> new ResourceNotFoundException("Point de livraison non trouvé avec ID: " + id));
 
         if (request.getAddress() != null) {
-            AddressResponse createdAddress = addressService.createAddress(request.getAddress());
-            Address address = addressRepository.findById(createdAddress.getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Impossible de trouver l'adresse nouvellement créée"));
-            deliveryPoint.setAddress(address);
+            Long existingAddressId = deliveryPoint.getAddress() != null ? deliveryPoint.getAddress().getId() : null;
+            if (existingAddressId != null) {
+                addressService.updateAddress(existingAddressId, request.getAddress());
+            } else {
+                AddressResponse createdAddress = addressService.createAddress(request.getAddress());
+                Address address = addressRepository.findById(createdAddress.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Adresse introuvable"));
+                deliveryPoint.setAddress(address);
+            }
         } else if (request.getAddressId() != null && !request.getAddressId().equals(deliveryPoint.getAddress().getId())) {
             Address address = addressRepository.findById(request.getAddressId())
                     .orElseThrow(() -> new ResourceNotFoundException("Adresse non trouvée avec ID: " + request.getAddressId()));
@@ -104,9 +111,15 @@ public class DeliveryPointService {
 
         deliveryPoint.setClientName(request.getClientName());
         deliveryPoint.setClientPhone(request.getClientPhoneNumber());
-        deliveryPoint.setNotes(request.getClientNote());
-        deliveryPoint.setStatus(DeliveryStatus.valueOf(request.getDeliveryStatus()));
-        deliveryPoint.setPlannedTime(LocalDateTime.parse(request.getDeliveryTime(), DATE_TIME_FORMATTER));
+        deliveryPoint.setClientEmail(request.getClientEmail());
+        deliveryPoint.setClientNote(request.getClientNote());
+        deliveryPoint.setDeliveryNote(request.getDeliveryNote());
+        if (request.getDeliveryStatus() != null) {
+            deliveryPoint.setStatus(DeliveryStatus.valueOf(request.getDeliveryStatus()));
+        }
+        if (request.getDeliveryTime() != null) {
+            deliveryPoint.setPlannedTime(LocalDateTime.parse(request.getDeliveryTime(), DATE_TIME_FORMATTER));
+        }
 
         DeliveryPoint updatedDeliveryPoint = deliveryPointRepository.save(deliveryPoint);
         return mapToResponse(updatedDeliveryPoint);
@@ -162,11 +175,12 @@ public class DeliveryPointService {
                 .address(addressService.getAddressResponseById(deliveryPoint.getAddress().getId()))
                 .clientName(deliveryPoint.getClientName())
                 .clientPhoneNumber(deliveryPoint.getClientPhone())
-                .clientNote(deliveryPoint.getNotes())
-                .deliveryNote(deliveryPoint.getNotes())
-                .deliveryTime(deliveryPoint.getPlannedTime().toString())
-                .deliveryDate(deliveryPoint.getPlannedTime().toString())
-                .deliveryStatus(deliveryPoint.getStatus().toString())
+                .clientEmail(deliveryPoint.getClientEmail())
+                .clientNote(deliveryPoint.getClientNote())
+                .deliveryNote(deliveryPoint.getDeliveryNote())
+                .deliveryTime(deliveryPoint.getPlannedTime() != null ? deliveryPoint.getPlannedTime().toString() : null)
+                .deliveryDate(deliveryPoint.getPlannedTime() != null ? deliveryPoint.getPlannedTime().toString() : null)
+                .deliveryStatus(deliveryPoint.getStatus() != null ? deliveryPoint.getStatus().toString() : "PENDING")
                 .plannedTime(deliveryPoint.getPlannedTime())
                 .actualTime(deliveryPoint.getActualTime())
                 .build();
@@ -200,7 +214,7 @@ public class DeliveryPointService {
                 .address(address)
                 .clientName(defaultValues.getClientName() != null ? defaultValues.getClientName() : "Client")
                 .clientPhone(defaultValues.getClientPhoneNumber())
-                .notes(defaultValues.getClientNote())
+                .clientNote(defaultValues.getClientNote())
                 .status(DeliveryStatus.PENDING)
                 .plannedTime(defaultValues.getDeliveryTime() != null
                         ? LocalDateTime.parse(defaultValues.getDeliveryTime(), DATE_TIME_FORMATTER)
