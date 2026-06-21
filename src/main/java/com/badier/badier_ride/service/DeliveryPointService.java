@@ -178,9 +178,9 @@ public class DeliveryPointService {
                 .clientEmail(deliveryPoint.getClientEmail())
                 .clientNote(deliveryPoint.getClientNote())
                 .deliveryNote(deliveryPoint.getDeliveryNote())
-                .deliveryTime(deliveryPoint.getPlannedTime() != null ? deliveryPoint.getPlannedTime().toString() : null)
-                .deliveryDate(deliveryPoint.getPlannedTime() != null ? deliveryPoint.getPlannedTime().toString() : null)
-                .deliveryStatus(deliveryPoint.getStatus() != null ? deliveryPoint.getStatus().toString() : "PENDING")
+                .deliveryTime(deliveryPoint.getPlannedTime() != null ? deliveryPoint.getPlannedTime().toLocalTime().toString() : null)
+                .deliveryDate(deliveryPoint.getPlannedTime() != null ? deliveryPoint.getPlannedTime().toLocalDate().toString() : null)
+                .deliveryStatus(deliveryPoint.getStatus() != null ? deliveryPoint.getStatus() : DeliveryStatus.PENDING)
                 .plannedTime(deliveryPoint.getPlannedTime())
                 .actualTime(deliveryPoint.getActualTime())
                 .build();
@@ -191,11 +191,11 @@ public class DeliveryPointService {
         base.setSequenceOrder(rdp.getSequenceOrder());
         base.setIsStartPoint(Boolean.TRUE.equals(rdp.getIsStartPoint()));
         base.setIsEndPoint(Boolean.TRUE.equals(rdp.getIsEndPoint()));
-        base.setDeliveryStatus(rdp.getStatus() != null ? rdp.getStatus().name() : base.getDeliveryStatus());
+        base.setDeliveryStatus(rdp.getStatus() != null ? rdp.getStatus() : base.getDeliveryStatus());
         if (rdp.getPlannedTime() != null) {
             base.setPlannedTime(rdp.getPlannedTime());
-            base.setDeliveryTime(rdp.getPlannedTime().toString());
-            base.setDeliveryDate(rdp.getPlannedTime().toString());
+            base.setDeliveryTime(rdp.getPlannedTime().toLocalTime().toString());
+            base.setDeliveryDate(rdp.getPlannedTime().toLocalDate().toString());
         }
         if (rdp.getActualTime() != null) {
             base.setActualTime(rdp.getActualTime());

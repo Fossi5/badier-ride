@@ -19,12 +19,15 @@ public class ProofService {
     @Value("${app.upload.dir:uploads/proofs}")
     private String uploadDir;
 
+    @Value("${app.proof.master-code:1234}")
+    private String masterCodeValue;
+
     private final RouteDeliveryPointRepository routeDeliveryPointRepository;
 
     public String uploadProof(Long routeId, Long deliveryPointId, MultipartFile file) throws IOException {
         RouteDeliveryPoint rdp = routeDeliveryPointRepository
-            .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
-            .orElseThrow(() -> new ResourceNotFoundException("Point de livraison introuvable dans cette tournée"));
+                .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
+                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison introuvable dans cette tournée"));
 
         String ext = getExtension(file.getOriginalFilename());
         String filename = UUID.randomUUID() + ext;
@@ -39,10 +42,10 @@ public class ProofService {
 
     public void validateWithCode(Long routeId, Long deliveryPointId, String code) {
         RouteDeliveryPoint rdp = routeDeliveryPointRepository
-            .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
-            .orElseThrow(() -> new ResourceNotFoundException("Point de livraison introuvable dans cette tournée"));
+                .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
+                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison introuvable dans cette tournée"));
 
-        boolean masterCode = "1234".equals(code);
+        boolean masterCode = masterCodeValue.equals(code);
         boolean matchesStored = rdp.getConfirmationCode() != null && rdp.getConfirmationCode().equals(code);
         if (!masterCode && !matchesStored) {
             throw new InvalidOperationException("Code de confirmation invalide");
@@ -53,16 +56,17 @@ public class ProofService {
 
     public void generateConfirmationCode(Long routeId, Long deliveryPointId) {
         RouteDeliveryPoint rdp = routeDeliveryPointRepository
-            .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
-            .orElseThrow(() -> new ResourceNotFoundException("Point de livraison introuvable dans cette tournée"));
+                .findByRouteIdAndDeliveryPointId(routeId, deliveryPointId)
+                .orElseThrow(() -> new ResourceNotFoundException("Point de livraison introuvable dans cette tournée"));
 
-        String code = String.format("%06d", (int)(Math.random() * 1000000));
+        String code = String.format("%06d", (int) (Math.random() * 1000000));
         rdp.setConfirmationCode(code);
         routeDeliveryPointRepository.save(rdp);
     }
 
     private String getExtension(String filename) {
-        if (filename == null || !filename.contains(".")) return ".jpg";
+        if (filename == null || !filename.contains("."))
+            return ".jpg";
         return filename.substring(filename.lastIndexOf("."));
     }
 }

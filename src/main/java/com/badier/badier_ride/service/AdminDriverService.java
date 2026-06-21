@@ -123,6 +123,9 @@ public class AdminDriverService {
     public void deleteDriver(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver", id));
+        // Libérer username/email pour permettre la recréation avec les mêmes coordonnées
+        user.setUsername(user.getUsername() + "_deleted_" + id);
+        user.setEmail(user.getEmail() + "_deleted_" + id);
         user.setActive(false);
         userRepository.save(user);
     }

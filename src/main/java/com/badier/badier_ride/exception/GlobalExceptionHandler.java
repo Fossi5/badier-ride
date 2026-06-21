@@ -80,7 +80,14 @@ public class GlobalExceptionHandler {
                     errorDetail.put("message", fieldError.getDefaultMessage());
                     return errorDetail;
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(java.util.ArrayList::new));
+
+        ex.getBindingResult().getGlobalErrors().forEach(globalError -> {
+            Map<String, String> errorDetail = new HashMap<>();
+            errorDetail.put("field", globalError.getObjectName());
+            errorDetail.put("message", globalError.getDefaultMessage());
+            errors.add(errorDetail);
+        });
 
         Map<String, Object> response = new HashMap<>();
         response.put("errors", errors);

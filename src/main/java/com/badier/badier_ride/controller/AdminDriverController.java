@@ -40,6 +40,7 @@ public class AdminDriverController {
     }
 
     @GetMapping("/paged")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DISPATCHER')")
     public ResponseEntity<Page<DriverResponse>> getAllDriversPaged(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
