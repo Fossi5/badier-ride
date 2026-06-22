@@ -130,12 +130,7 @@ public class MapsApiService {
             
         } catch (Exception e) {
             log.error("Erreur lors de l'appel à l'API Google Maps Directions", e);
-            // En cas d'erreur, retourner l'ordre original
-            List<Integer> defaultOrder = new java.util.ArrayList<>();
-            for (int i = 0; i < deliveryPoints.size(); i++) {
-                defaultOrder.add(i);
-            }
-            return defaultOrder;
+            throw new RuntimeException("Google Maps indisponible", e);
         }
     }
     

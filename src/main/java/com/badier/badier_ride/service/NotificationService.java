@@ -47,6 +47,21 @@ public class NotificationService {
         });
     }
 
+    @Transactional
+    public void deleteOne(Long id, String username) {
+        Notification n = notificationRepository.findById(id)
+                .orElseThrow(() -> new com.badier.badier_ride.exception.ResourceNotFoundException("Notification", id));
+        if (!n.getReceiver().getUsername().equals(username)) {
+            throw new com.badier.badier_ride.exception.UnauthorizedOperationException("Non autorisé");
+        }
+        notificationRepository.delete(n);
+    }
+
+    @Transactional
+    public void deleteAll(String username) {
+        notificationRepository.deleteByReceiverUsername(username);
+    }
+
     private NotificationResponse mapToResponse(Notification n) {
         return NotificationResponse.builder()
                 .id(n.getId())

@@ -70,9 +70,14 @@ public class RouteService {
 
         List<DeliveryPoint> deliveryPoints = new ArrayList<>();
         if (request.getDeliveryPointIds() != null && !request.getDeliveryPointIds().isEmpty()) {
-            deliveryPoints = deliveryPointRepository.findAllById(request.getDeliveryPointIds());
-            if (deliveryPoints.size() != request.getDeliveryPointIds().size()) {
+            Map<Long, DeliveryPoint> pointsById = deliveryPointRepository.findAllById(request.getDeliveryPointIds())
+                    .stream().collect(Collectors.toMap(DeliveryPoint::getId, Function.identity()));
+            if (pointsById.size() != request.getDeliveryPointIds().size()) {
                 throw new ResourceNotFoundException("Some delivery points were not found");
+            }
+            // Respecter l'ordre de sélection du dispatcher
+            for (Long id : request.getDeliveryPointIds()) {
+                deliveryPoints.add(pointsById.get(id));
             }
         }
 
@@ -200,11 +205,16 @@ public class RouteService {
         }
 
         if (request.getDeliveryPointIds() != null) {
-            List<DeliveryPoint> deliveryPoints = deliveryPointRepository.findAllById(request.getDeliveryPointIds());
-            if (deliveryPoints.size() != request.getDeliveryPointIds().size()) {
+            Map<Long, DeliveryPoint> pointsById = deliveryPointRepository.findAllById(request.getDeliveryPointIds())
+                    .stream().collect(Collectors.toMap(DeliveryPoint::getId, Function.identity()));
+            if (pointsById.size() != request.getDeliveryPointIds().size()) {
                 throw new ResourceNotFoundException("Some delivery points were not found");
             }
-            rebuildRouteDeliveryPoints(route, deliveryPoints);
+            List<DeliveryPoint> orderedPoints = new ArrayList<>();
+            for (Long pid : request.getDeliveryPointIds()) {
+                orderedPoints.add(pointsById.get(pid));
+            }
+            rebuildRouteDeliveryPoints(route, orderedPoints);
         }
 
         if (request.getName() != null)
@@ -220,6 +230,13 @@ public class RouteService {
 
         Route updatedRoute = routeRepository.save(route);
         log.info("Route updated successfully with ID: {}", updatedRoute.getId());
+
+        notificationService.send(
+            updatedRoute.getDriver(),
+            updatedRoute.getDispatcher(),
+            NotificationType.ROUTE_UPDATE,
+            "La tournée \"" + updatedRoute.getName() + "\" a été modifiée"
+        );
 
         if (newDriver != null && newDriver.getEmail() != null) {
             emailService.send(
@@ -341,6 +358,20 @@ public class RouteService {
 
         Route updatedRoute = routeRepository.save(route);
         log.info("Route status updated successfully with ID: {} to status: {}", updatedRoute.getId(), routeStatus);
+
+        String statusMsg = switch (routeStatus) {
+            case IN_PROGRESS -> "démarrée";
+            case COMPLETED   -> "terminée";
+            case CANCELLED   -> "annulée";
+            default          -> "mise à jour";
+        };
+        notificationService.send(
+            updatedRoute.getDispatcher(),
+            updatedRoute.getDriver(),
+            NotificationType.ROUTE_UPDATE,
+            "Tournée \"" + updatedRoute.getName() + "\" : " + statusMsg
+        );
+
         return mapToResponse(updatedRoute);
     }
 

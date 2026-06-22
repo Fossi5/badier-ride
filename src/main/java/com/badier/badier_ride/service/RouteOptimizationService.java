@@ -2,7 +2,6 @@ package com.badier.badier_ride.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,29 +133,14 @@ public class RouteOptimizationService {
                 continue;
             }
 
-            try {
-                Map<String, Double> distanceInfo = mapsApiService.getDistanceAndDuration(
-                        latitude, longitude,
-                        point.getAddress().getLatitude(),
-                        point.getAddress().getLongitude());
+            double distance = mapsApiService.calculateHaversineDistance(
+                    latitude, longitude,
+                    point.getAddress().getLatitude(),
+                    point.getAddress().getLongitude());
 
-                double distance = distanceInfo.get("distance");
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = point;
-                }
-            } catch (Exception e) {
-                log.warn("Impossible d'obtenir la distance via Google Maps, utilisation de la distance à vol d'oiseau",
-                        e);
-                double distance = mapsApiService.calculateHaversineDistance(
-                        latitude, longitude,
-                        point.getAddress().getLatitude(),
-                        point.getAddress().getLongitude()) * 1000;
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = point;
-                }
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = point;
             }
         }
 

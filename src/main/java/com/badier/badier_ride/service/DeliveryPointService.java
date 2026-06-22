@@ -23,9 +23,11 @@ import com.badier.badier_ride.entity.Address;
 import com.badier.badier_ride.entity.DeliveryPoint;
 import com.badier.badier_ride.entity.RouteDeliveryPoint;
 import com.badier.badier_ride.enumeration.DeliveryStatus;
+import com.badier.badier_ride.enumeration.NotificationType;
 import com.badier.badier_ride.repository.AddressRepository;
 import com.badier.badier_ride.repository.DeliveryPointRepository;
 import com.badier.badier_ride.repository.RouteDeliveryPointRepository;
+import com.badier.badier_ride.repository.RouteRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +41,8 @@ public class DeliveryPointService {
     private final AddressRepository addressRepository;
     private final AddressService addressService;
     private final RouteDeliveryPointRepository routeDeliveryPointRepository;
+    private final RouteRepository routeRepository;
+    private final NotificationService notificationService;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     @Transactional
@@ -79,6 +83,12 @@ public class DeliveryPointService {
 
     public List<DeliveryPointResponse> getAllDeliveryPoints() {
         return deliveryPointRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<DeliveryPointResponse> getVerifiedDeliveryPoints() {
+        return deliveryPointRepository.findByAddressIsVerifiedTrue().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -136,6 +146,22 @@ public class DeliveryPointService {
         }
 
         RouteDeliveryPoint updatedRdp = routeDeliveryPointRepository.save(rdp);
+
+        if (status == DeliveryStatus.COMPLETED || status == DeliveryStatus.FAILED) {
+            routeRepository.findById(routeId).ifPresent(route -> {
+                String clientName = rdp.getDeliveryPoint().getClientName();
+                String msg = status == DeliveryStatus.COMPLETED
+                        ? "Livraison confirmée : " + clientName
+                        : "Échec de livraison : " + clientName;
+                notificationService.send(
+                    route.getDispatcher(),
+                    route.getDriver(),
+                    status == DeliveryStatus.COMPLETED ? NotificationType.ROUTE_UPDATE : NotificationType.ALERT,
+                    msg
+                );
+            });
+        }
+
         return mapToResponse(updatedRdp);
     }
 

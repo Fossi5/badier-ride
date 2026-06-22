@@ -27,6 +27,11 @@ public class DeliveryPointController {
         return ResponseEntity.ok(deliveryPointService.getAllDeliveryPoints());
     }
 
+    @GetMapping("/verified")
+    public ResponseEntity<List<DeliveryPointResponse>> getVerifiedDeliveryPoints() {
+        return ResponseEntity.ok(deliveryPointService.getVerifiedDeliveryPoints());
+    }
+
     @GetMapping("/paged")
     public ResponseEntity<Page<DeliveryPointResponse>> getAllDeliveryPointsPaged(
             @RequestParam(defaultValue = "0") int page,

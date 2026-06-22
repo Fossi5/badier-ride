@@ -31,4 +31,16 @@ public class NotificationController {
         notificationService.markAllRead(auth.getName());
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOne(@PathVariable Long id, Authentication auth) {
+        notificationService.deleteOne(id, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAll(Authentication auth) {
+        notificationService.deleteAll(auth.getName());
+        return ResponseEntity.noContent().build();
+    }
 }

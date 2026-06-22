@@ -14,4 +14,5 @@ public interface DeliveryPointRepository extends JpaRepository<DeliveryPoint, Lo
     List<DeliveryPoint> findByAddressId(Long addressId);
     List<DeliveryPoint> findByClientNameContaining(String clientName);
     boolean existsByAddressId(Long addressId);
+    List<DeliveryPoint> findByAddressIsVerifiedTrue();
 }
