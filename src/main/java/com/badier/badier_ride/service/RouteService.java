@@ -28,7 +28,6 @@ import com.badier.badier_ride.entity.Route;
 import com.badier.badier_ride.entity.RouteDeliveryPoint;
 import com.badier.badier_ride.entity.User;
 import com.badier.badier_ride.enumeration.DeliveryStatus;
-import com.badier.badier_ride.enumeration.NotificationType;
 import com.badier.badier_ride.enumeration.RouteStatus;
 import com.badier.badier_ride.exception.InvalidOperationException;
 import com.badier.badier_ride.exception.ResourceNotFoundException;
@@ -50,8 +49,7 @@ public class RouteService {
     private final DeliveryPointRepository deliveryPointRepository;
     private final DeliveryPointService deliveryPointService;
     private final RouteDeliveryPointRepository routeDeliveryPointRepository;
-    private final EmailService emailService;
-    private final NotificationService notificationService;
+    private final RouteNotificationHelper notificationHelper;
 
 
     @Transactional
@@ -70,15 +68,7 @@ public class RouteService {
 
         List<DeliveryPoint> deliveryPoints = new ArrayList<>();
         if (request.getDeliveryPointIds() != null && !request.getDeliveryPointIds().isEmpty()) {
-            Map<Long, DeliveryPoint> pointsById = deliveryPointRepository.findAllById(request.getDeliveryPointIds())
-                    .stream().collect(Collectors.toMap(DeliveryPoint::getId, Function.identity()));
-            if (pointsById.size() != request.getDeliveryPointIds().size()) {
-                throw new ResourceNotFoundException("Some delivery points were not found");
-            }
-            // Respecter l'ordre de sélection du dispatcher
-            for (Long id : request.getDeliveryPointIds()) {
-                deliveryPoints.add(pointsById.get(id));
-            }
+            deliveryPoints = buildDeliveryPointsInOrder(request.getDeliveryPointIds());
         }
 
         Route route = Route.builder()
@@ -113,25 +103,7 @@ public class RouteService {
         }
 
         log.info("Route created successfully with ID: {}", savedRoute.getId());
-
-        notificationService.send(
-            driver,
-            dispatcher,
-            NotificationType.NEW_ROUTE,
-            "Nouvelle tournée assignée : " + savedRoute.getName()
-        );
-
-        if (driver.getEmail() != null) {
-            emailService.send(
-                driver.getEmail(),
-                "Nouvelle tournée assignée",
-                "Bonjour " + driver.getUsername() + ",\n\n" +
-                "Une nouvelle tournée vous a été assignée : " + savedRoute.getName() + "\n" +
-                "Heure de départ prévue : " + (savedRoute.getStartTime() != null ? savedRoute.getStartTime() : "Non définie") + "\n\n" +
-                "Connectez-vous à Badier Ride pour voir les détails."
-            );
-        }
-
+        notificationHelper.notifyRouteCreated(savedRoute);
         return mapToResponse(savedRoute);
     }
 
@@ -205,16 +177,7 @@ public class RouteService {
         }
 
         if (request.getDeliveryPointIds() != null) {
-            Map<Long, DeliveryPoint> pointsById = deliveryPointRepository.findAllById(request.getDeliveryPointIds())
-                    .stream().collect(Collectors.toMap(DeliveryPoint::getId, Function.identity()));
-            if (pointsById.size() != request.getDeliveryPointIds().size()) {
-                throw new ResourceNotFoundException("Some delivery points were not found");
-            }
-            List<DeliveryPoint> orderedPoints = new ArrayList<>();
-            for (Long pid : request.getDeliveryPointIds()) {
-                orderedPoints.add(pointsById.get(pid));
-            }
-            rebuildRouteDeliveryPoints(route, orderedPoints);
+            rebuildRouteDeliveryPoints(route, buildDeliveryPointsInOrder(request.getDeliveryPointIds()));
         }
 
         if (request.getName() != null)
@@ -230,25 +193,11 @@ public class RouteService {
 
         Route updatedRoute = routeRepository.save(route);
         log.info("Route updated successfully with ID: {}", updatedRoute.getId());
-
-        notificationService.send(
-            updatedRoute.getDriver(),
-            updatedRoute.getDispatcher(),
-            NotificationType.ROUTE_UPDATE,
-            "La tournée \"" + updatedRoute.getName() + "\" a été modifiée"
+        notificationHelper.notifyRouteUpdated(
+            updatedRoute,
+            newDriver != null ? newDriver.getEmail() : null,
+            newDriver != null ? newDriver.getUsername() : null
         );
-
-        if (newDriver != null && newDriver.getEmail() != null) {
-            emailService.send(
-                newDriver.getEmail(),
-                "Nouvelle tournée assignée",
-                "Bonjour " + newDriver.getUsername() + ",\n\n" +
-                "Une nouvelle tournée vous a été assignée : " + updatedRoute.getName() + "\n" +
-                "Heure de départ prévue : " + (updatedRoute.getStartTime() != null ? updatedRoute.getStartTime() : "Non définie") + "\n\n" +
-                "Connectez-vous à Badier Ride pour voir les détails."
-            );
-        }
-
         return mapToResponse(updatedRoute);
     }
 
@@ -358,20 +307,7 @@ public class RouteService {
 
         Route updatedRoute = routeRepository.save(route);
         log.info("Route status updated successfully with ID: {} to status: {}", updatedRoute.getId(), routeStatus);
-
-        String statusMsg = switch (routeStatus) {
-            case IN_PROGRESS -> "démarrée";
-            case COMPLETED   -> "terminée";
-            case CANCELLED   -> "annulée";
-            default          -> "mise à jour";
-        };
-        notificationService.send(
-            updatedRoute.getDispatcher(),
-            updatedRoute.getDriver(),
-            NotificationType.ROUTE_UPDATE,
-            "Tournée \"" + updatedRoute.getName() + "\" : " + statusMsg
-        );
-
+        notificationHelper.notifyStatusChanged(updatedRoute, routeStatus);
         return mapToResponse(updatedRoute);
     }
 
@@ -421,6 +357,19 @@ public class RouteService {
         Route refreshedRoute = routeRepository.findById(routeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + routeId));
         return mapToResponse(refreshedRoute);
+    }
+
+    private List<DeliveryPoint> buildDeliveryPointsInOrder(List<Long> ids) {
+        Map<Long, DeliveryPoint> pointsById = deliveryPointRepository.findAllById(ids)
+                .stream().collect(Collectors.toMap(DeliveryPoint::getId, Function.identity()));
+        if (pointsById.size() != ids.size()) {
+            throw new ResourceNotFoundException("Some delivery points were not found");
+        }
+        List<DeliveryPoint> ordered = new ArrayList<>();
+        for (Long id : ids) {
+            ordered.add(pointsById.get(id));
+        }
+        return ordered;
     }
 
     private void rebuildRouteDeliveryPoints(Route route, List<DeliveryPoint> deliveryPoints) {

@@ -17,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -87,6 +89,14 @@ public class MessageService {
 
     public long countUnread(Long routeId, String username) {
         return messageRepository.countByRouteIdAndIsReadFalseAndSenderUsernameNot(routeId, username);
+    }
+
+    public Map<Long, Long> countUnreadBulk(List<Long> routeIds, String username) {
+        Map<Long, Long> result = new HashMap<>();
+        if (routeIds == null || routeIds.isEmpty()) return result;
+        messageRepository.countUnreadByRouteIds(routeIds, username)
+                .forEach(row -> result.put((Long) row[0], (Long) row[1]));
+        return result;
     }
 
     private void checkAccess(Route route, String username) {
